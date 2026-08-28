@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/notifications/notification_provider.dart';
 import '../../../core/preferences/preferences_provider.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -48,6 +49,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           reportTime: _reportTime,
         );
     ref.invalidate(userNameProvider);
+
+    final notifications = ref.read(notificationServiceProvider);
+    await notifications.requestPermissions();
+    await notifications.scheduleDailyCheckIn(_checkInTime);
+    await notifications.scheduleDailyReflection(_reportTime);
+
     if (mounted) context.go('/today');
   }
 

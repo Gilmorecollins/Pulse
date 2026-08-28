@@ -54,6 +54,13 @@ dependencies:
   uuid: ^4.5.1
   intl: ^0.19.0
 
+  # Check-in scheduling (see docs/ARCHITECTURE.md — Android 12+ exact
+  # alarms need explicit permission handling, hence timezone-aware
+  # scheduling rather than naive Timer/Future.delayed)
+  flutter_local_notifications: ^19.4.2
+  timezone: ^0.10.1
+  flutter_timezone: ^4.1.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

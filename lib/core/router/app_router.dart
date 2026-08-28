@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/checkin/presentation/checkin_screen.dart';
 import '../../features/history/presentation/history_screen.dart';
 import '../../features/insights/presentation/insights_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
+import '../../features/reflection/presentation/reflection_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/today/presentation/today_screen.dart';
 import '../preferences/preferences_provider.dart';
@@ -25,6 +27,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/checkin',
+        builder: (context, state) => const CheckInScreen(),
+      ),
+      GoRoute(
+        path: '/reflection',
+        builder: (context, state) => const ReflectionScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

@@ -12,10 +12,11 @@ handles errors, and is navigable).
 - Drift database + v1 tables (see DATABASE.md)
 - Repository layer for tasks & daily plans
 
-## Phase 2 — Onboarding (next up)
+## Phase 2 — Onboarding ✅
 - Welcome screen
 - Name, check-in time, report time
 - Persist preferences locally (`shared_preferences`)
+- GoRouter redirect gates first launch to onboarding until complete
 
 ## Phase 3 — Today ✅ (manual entry, ahead of Phase 2)
 - Today screen: view plan, progress %
@@ -27,14 +28,23 @@ Built alongside Phase 1 rather than after Phase 2, so there was a working
 screen to run/test against immediately. The "Good morning" greeting is
 static until onboarding captures a name.
 
-## Phase 4 — Single Check-in
+## Phase 4 — Single Check-in ✅
 - Schedule one local notification/day at the configured time
+  (`flutter_local_notifications` + `timezone`, exact alarm, Android 12+
+  permission requested during onboarding)
 - Check-in screen: still working / completed / paused / didn't start
 - Update task status from response
+- Verified live on-device: exact alarm fires at the scheduled wall-clock
+  time, tap opens the check-in screen, and it self-reschedules for the
+  next day
 
-## Phase 5 — Daily Reflection
-- Mood selector + biggest win
-- Carry-forward note
+## Phase 5 — Daily Reflection ✅
+- Mood selector + biggest win + carry-forward note
+- Scheduled at the report time captured during onboarding, same pattern
+  as Phase 4's check-in (second notification, own channel, own payload)
+- Verified live on-device: correct notification content posted, correct
+  screen opened on tap, data persisted correctly (`daily_reflections`
+  row confirmed via direct DB pull)
 
 ## Phase 6 — Daily Report
 - Generate report from the day's plan/tasks/reflection
