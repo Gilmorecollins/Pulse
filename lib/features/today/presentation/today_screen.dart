@@ -3,7 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/models/task_enums.dart';
+import '../../../core/preferences/preferences_provider.dart';
 import 'today_providers.dart';
+
+String _greeting() {
+  final hour = DateTime.now().hour;
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
 
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
@@ -99,6 +107,7 @@ class _TodayContent extends ConsumerWidget {
         .length;
     final total = tasks.length;
     final progress = total == 0 ? 0.0 : completed / total;
+    final name = ref.watch(userNameProvider).valueOrNull;
 
     return CustomScrollView(
       slivers: [
@@ -109,7 +118,9 @@ class _TodayContent extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Good morning',
+                  name == null || name.isEmpty
+                      ? _greeting()
+                      : '${_greeting()}, $name',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 4),

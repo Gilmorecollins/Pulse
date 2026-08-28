@@ -5,23 +5,27 @@ end-to-end on a real device, per the project's Definition of Done (a
 feature isn't done because it compiles — it's done when it works, persists,
 handles errors, and is navigable).
 
-## Phase 1 — Foundation (current)
+## Phase 1 — Foundation ✅
 - Project scaffold, Material 3 theme, GoRouter shell with 4 nav
-  destinations (Today / History / Insights / Settings — Insights and
-  History are stubs)
+  destinations (Today / History / Insights / Settings — Insights, History
+  and Settings are stubs for now)
 - Drift database + v1 tables (see DATABASE.md)
 - Repository layer for tasks & daily plans
 
-## Phase 2 — Onboarding
+## Phase 2 — Onboarding (next up)
 - Welcome screen
 - Name, check-in time, report time
 - Persist preferences locally (`shared_preferences`)
 
-## Phase 3 — Today
+## Phase 3 — Today ✅ (manual entry, ahead of Phase 2)
 - Today screen: view plan, progress %
 - Add task (manual entry only — no AI yet)
-- Mark task complete
+- Mark task complete, delete task
 - Empty/loading/error states
+
+Built alongside Phase 1 rather than after Phase 2, so there was a working
+screen to run/test against immediately. The "Good morning" greeting is
+static until onboarding captures a name.
 
 ## Phase 4 — Single Check-in
 - Schedule one local notification/day at the configured time
