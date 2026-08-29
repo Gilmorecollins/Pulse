@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/models/mood.dart';
 import '../../../core/models/task_enums.dart';
+import '../../report/presentation/report_providers.dart';
 import '../../today/presentation/today_providers.dart';
 import 'reflection_providers.dart';
 
@@ -44,7 +45,20 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
               : _carryController.text.trim(),
         );
     ref.invalidate(todayReflectionProvider);
-    if (mounted) context.go('/today');
+
+    final tasks = await ref
+        .read(todayRepositoryProvider)
+        .getTasksForPlan(plan.id);
+    final completed = tasks
+        .where((t) => TaskStatus.fromDb(t.status) == TaskStatus.completed)
+        .length;
+    final completionRate = tasks.isEmpty ? 0.0 : completed / tasks.length;
+    await ref.read(reportRepositoryProvider).generateReport(
+          dailyPlanId: plan.id,
+          completionRate: completionRate,
+        );
+
+    if (mounted) context.go('/report/${plan.id}');
   }
 
   @override

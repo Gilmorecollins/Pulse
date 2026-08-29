@@ -46,22 +46,57 @@ static until onboarding captures a name.
   screen opened on tap, data persisted correctly (`daily_reflections`
   row confirmed via direct DB pull)
 
-## Phase 6 — Daily Report
-- Generate report from the day's plan/tasks/reflection
-- Report screen (on-device only, no delivery channel yet)
-- Report history (backs the History tab)
+## Phase 6 — Daily Report ✅
+- Report generated automatically when a reflection is saved (completion
+  rate computed from that day's tasks, stored in `daily_reports`)
+- Report screen: productivity %, completed/not-completed task lists, the
+  user's own reflection (mood/win/carry-forward) — no AI-generated
+  summary text yet, since that's Phase 9 and nothing should imply it
+  exists before it does
+- Report history backs the History tab (list of past days → tap for
+  that day's report); same screen renders both "just generated today"
+  and any past day, parameterized by plan id
+- Verified live on-device: reflection save → auto-navigates to the
+  report → correct completion rate, tasks, and reflection confirmed via
+  direct DB pull
 
-**^ Everything above this line is v1 / MVP.**
+**^ Everything above this line is v1 / MVP — and as of Phase 6, the full
+PLAN → PULSE → REFLECT loop works end-to-end on a real device.**
 
 ---
 
-## Phase 7 — Activity Discovery
-- Free-text "I had a meeting with..." → suggested task, add/ignore
-- Activity timeline view
+## Phase 7 — Activity Discovery ✅ (trimmed)
+- "Did something else come up?" free-text logging, added to the
+  check-in screen — creates an already-completed task sourced from
+  `pulse_checkin` rather than the morning plan
+- Distinguished from planned tasks: shown with a "Logged during
+  check-in" marker on Today, listed under a separate "New activities"
+  section on the report (rather than mixed into "Completed")
+- Productivity % (Today and Report) now explicitly excludes logged
+  activities from the denominator — they're real, but they shouldn't
+  inflate planned-completion just by being created already-done
+- Verified live on-device: logged activity appears correctly marked,
+  progress ratio unaffected
+- **Trimmed**: no add/ignore confirmation step (doc's original two-step
+  "Should I add X?" flow) — v1 adds directly, since there's no AI
+  interpretation step yet to confirm *before*. No dedicated activity
+  timeline view — the Today list + report's "New activities" section
+  cover the same need without a new screen; revisit if that turns out
+  to be insufficient with real use.
 
-## Phase 8 — Insights
-- Replace the Insights stub with real trends once there's enough report
-  history to make them meaningful (completion average, consistency, etc.)
+## Phase 8 — Insights ✅
+- Average completion, best day so far, average daily tasks, and
+  check-in consistency — computed from `daily_reports`/`tasks`/
+  `check_ins`, nothing fabricated
+- Honest with sparse data by construction: numbers reflect however many
+  days are actually tracked (shown as "Based on N days tracked so
+  far"), and check-in consistency shows "No check-ins yet" rather than
+  a misleading 0% when there's no track record either way
+- Empty state (zero reports) still shows the original stub message
+  rather than a wall of zeroes
+- Verified live on-device: 1 day tracked, 4 planned tasks/1 completed →
+  correctly showed 25% average completion, matching best day, and the
+  correct null-state for check-in consistency
 
 ## Phase 9 — AI
 - Proxy backend (Gemini, see API.md)

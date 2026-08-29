@@ -102,10 +102,18 @@ class _TodayContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final completed = tasks
+    // Progress reflects the *planned* day — activities logged via
+    // check-in are real and shown in the list below, but don't inflate
+    // this ratio just because they're created already-completed.
+    final planned = tasks.where((t) {
+      final source = TaskSource.fromDb(t.source);
+      return source == TaskSource.morningPlan ||
+          source == TaskSource.userAdded;
+    }).toList();
+    final completed = planned
         .where((t) => TaskStatus.fromDb(t.status) == TaskStatus.completed)
         .length;
-    final total = tasks.length;
+    final total = planned.length;
     final progress = total == 0 ? 0.0 : completed / total;
     final name = ref.watch(userNameProvider).valueOrNull;
 
@@ -241,6 +249,9 @@ class _TaskTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final status = TaskStatus.fromDb(task.status);
     final isCompleted = status == TaskStatus.completed;
+    final source = TaskSource.fromDb(task.source);
+    final isLoggedActivity =
+        source == TaskSource.pulseCheckin || source == TaskSource.aiSuggested;
 
     return Card(
       child: ListTile(
@@ -263,6 +274,14 @@ class _TaskTile extends ConsumerWidget {
                 : null,
           ),
         ),
+        subtitle: isLoggedActivity
+            ? Text(
+                'Logged during check-in',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              )
+            : null,
         trailing: IconButton(
           icon: const Icon(Icons.close, size: 18),
           onPressed: () =>
