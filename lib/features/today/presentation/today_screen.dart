@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/ai/ai_providers.dart';
+import '../../../core/ai/gemini_client.dart';
+import '../../../core/ai/gemini_service.dart';
 import '../../../core/models/task_enums.dart';
 import '../../../core/preferences/preferences_provider.dart';
 import 'today_providers.dart';
@@ -39,59 +42,206 @@ class TodayScreen extends ConsumerWidget {
   }
 
   void _showAddTaskSheet(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'What are you working on?',
-              style: Theme.of(sheetContext).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                hintText: 'e.g. Finish portfolio',
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _submit(sheetContext, ref, controller),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => _submit(sheetContext, ref, controller),
-              child: const Text('Add to today'),
-            ),
-          ],
-        ),
-      ),
+      builder: (sheetContext) => const _AddTaskSheet(),
     );
   }
+}
 
-  Future<void> _submit(
-    BuildContext sheetContext,
-    WidgetRef ref,
-    TextEditingController controller,
-  ) async {
-    final title = controller.text.trim();
+/// Add-task sheet: a single-task manual add (always available), plus an
+/// AI "split my day" flow once Gemini is configured — text in, a list of
+/// extracted tasks the user reviews and confirms before anything is
+/// written (see docs/ARCHITECTURE.md's AI flow).
+class _AddTaskSheet extends ConsumerStatefulWidget {
+  const _AddTaskSheet();
+
+  @override
+  ConsumerState<_AddTaskSheet> createState() => _AddTaskSheetState();
+}
+
+class _AddTaskSheetState extends ConsumerState<_AddTaskSheet> {
+  final _controller = TextEditingController();
+  List<ExtractedTask>? _suggestions;
+  Set<int> _checked = {};
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addSingle() async {
+    final title = _controller.text.trim();
     if (title.isEmpty) return;
     final plan = await ref.read(todayPlanProvider.future);
     await ref
         .read(todayRepositoryProvider)
         .addTask(dailyPlanId: plan.id, title: title);
-    if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _splitWithAi() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() => _busy = true);
+    try {
+      final tasks = await ref.read(geminiServiceProvider).extractTasks(text);
+      if (!mounted) return;
+      if (tasks.isEmpty) {
+        setState(() => _busy = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Couldn't find any tasks in that")),
+        );
+        return;
+      }
+      setState(() {
+        _suggestions = tasks;
+        _checked = {for (var i = 0; i < tasks.length; i++) i};
+        _busy = false;
+      });
+    } on GeminiNotConfiguredException {
+      if (mounted) setState(() => _busy = false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("AI split didn't work — try adding it as one task"),
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmSuggestions() async {
+    final suggestions = _suggestions;
+    if (suggestions == null || _checked.isEmpty) return;
+
+    setState(() => _busy = true);
+    final plan = await ref.read(todayPlanProvider.future);
+    final repo = ref.read(todayRepositoryProvider);
+    for (final i in _checked) {
+      final task = suggestions[i];
+      // userAdded, not aiSuggested — these are freshly planned tasks
+      // (not-yet-done), and aiSuggested is bucketed everywhere else in
+      // the app as a discovered/already-done activity like pulseCheckin.
+      await repo.addTask(
+        dailyPlanId: plan.id,
+        title: task.title,
+        source: TaskSource.userAdded,
+        estimatedDuration: task.estimatedDurationMinutes,
+      );
+    }
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAiKey = ref.watch(hasAiKeyProvider).valueOrNull ?? false;
+    final suggestions = _suggestions;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: suggestions == null
+            ? [
+                Text(
+                  'What are you working on?',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  minLines: 1,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: hasAiKey
+                        ? 'e.g. Finish portfolio and spend an hour on '
+                            'the watch app'
+                        : 'e.g. Finish portfolio',
+                    border: const OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _addSingle(),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _busy ? null : _addSingle,
+                  child: const Text('Add as one task'),
+                ),
+                if (hasAiKey) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: _busy ? null : _splitWithAi,
+                    icon: _busy
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.auto_awesome, size: 18),
+                    label: const Text('Split with AI'),
+                  ),
+                ],
+              ]
+            : [
+                Text(
+                  'Add these tasks?',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Uncheck anything that\'s not right — nothing is saved '
+                  'until you confirm.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                for (var i = 0; i < suggestions.length; i++)
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: _checked.contains(i),
+                    title: Text(suggestions[i].title),
+                    subtitle: suggestions[i].estimatedDurationMinutes == null
+                        ? null
+                        : Text(
+                            '~${suggestions[i].estimatedDurationMinutes} min',
+                          ),
+                    onChanged: (checked) => setState(() {
+                      if (checked == true) {
+                        _checked.add(i);
+                      } else {
+                        _checked.remove(i);
+                      }
+                    }),
+                  ),
+                const SizedBox(height: 8),
+                FilledButton(
+                  onPressed: _busy || _checked.isEmpty
+                      ? null
+                      : _confirmSuggestions,
+                  child: Text('Add ${_checked.length} task'
+                      '${_checked.length == 1 ? '' : 's'}'),
+                ),
+                TextButton(
+                  onPressed: _busy ? null : () => setState(() => _suggestions = null),
+                  child: const Text('Back'),
+                ),
+              ],
+      ),
+    );
   }
 }
 

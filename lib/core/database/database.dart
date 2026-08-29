@@ -76,6 +76,9 @@ class DailyReports extends Table {
       .unique()();
   RealColumn get completionRate => real()();
   DateTimeColumn get generatedAt => dateTime()();
+  // Gemini-generated summary of the day (Phase 9). Null until AI is
+  // configured, or if generation fails — never fabricated as a fallback.
+  TextColumn get aiSummary => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -90,7 +93,17 @@ class PulseDatabase extends _$PulseDatabase {
   PulseDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(dailyReports, dailyReports.aiSummary);
+          }
+        },
+      );
 }
 
 LazyDatabase _openConnection() {

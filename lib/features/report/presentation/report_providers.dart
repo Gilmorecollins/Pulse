@@ -35,11 +35,13 @@ class ReportViewData {
     required this.plan,
     required this.tasks,
     required this.reflection,
+    required this.report,
   });
 
   final DailyPlan plan;
   final List<Task> tasks;
   final DailyReflection? reflection;
+  final DailyReport? report;
 }
 
 final reportViewDataProvider = FutureProvider.family<ReportViewData, String>((
@@ -48,10 +50,17 @@ final reportViewDataProvider = FutureProvider.family<ReportViewData, String>((
 ) async {
   final todayRepo = ref.watch(todayRepositoryProvider);
   final reflectionRepo = ref.watch(reflectionRepositoryProvider);
+  final reportRepo = ref.watch(reportRepositoryProvider);
 
   final plan = await todayRepo.getPlanById(planId);
   final tasks = await todayRepo.getTasksForPlan(planId);
   final reflection = await reflectionRepo.getReflectionForPlan(planId);
+  final report = await reportRepo.getReportForPlan(planId);
 
-  return ReportViewData(plan: plan, tasks: tasks, reflection: reflection);
+  return ReportViewData(
+    plan: plan,
+    tasks: tasks,
+    reflection: reflection,
+    report: report,
+  );
 });

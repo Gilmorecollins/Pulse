@@ -57,6 +57,9 @@ id              text (uuid), primary key
 dailyPlanId     text, FK -> daily_plans.id, unique
 completionRate  real          -- computed at generation time, stored for history
 generatedAt     datetime
+aiSummary       text, nullable   -- Gemini-generated recap (Phase 9); null
+                                  -- until AI is configured or if generation
+                                  -- fails, never fabricated as a fallback
 ```
 
 ## Deferred tables (post-v1)

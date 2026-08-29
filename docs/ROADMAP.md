@@ -98,11 +98,37 @@ PLAN → PULSE → REFLECT loop works end-to-end on a real device.**
   correctly showed 25% average completion, matching best day, and the
   correct null-state for check-in consistency
 
-## Phase 9 — AI
-- Proxy backend (Gemini, see API.md)
-- Natural-language task extraction on the Today screen
-- AI-assisted activity interpretation
-- AI-generated daily reflection summary
+## Phase 9 — AI ⏳ (implemented, awaiting on-device verification)
+- Settings screen (previously a stub) now has a Gemini API key field,
+  stored via `flutter_secure_storage`
+- **Architecture change from the original plan**: calls Gemini directly
+  from the app rather than through a backend proxy — see docs/API.md for
+  why (single personal install, proxy's key-security rationale doesn't
+  apply, hosting was pure added complexity for this use case)
+- Today screen: "Split with AI" on the add-task sheet — free text →
+  multiple extracted tasks → user reviews/unchecks before anything is
+  added (source `user_added`, so completion % treats them exactly like
+  any other planned task)
+- Check-in screen: "Did something else come up?" now runs the text
+  through AI clean-up first, then a confirm/edit dialog, before logging
+  — replaces Phase 7's direct-add with the confirmation step that was
+  explicitly deferred pending an AI interpretation step
+- Reflection save: generates a short AI summary of the day (grounded only
+  in that day's real data) and stores it on the report; shown on the
+  Report screen labeled "AI SUMMARY", never presented as human-written
+- New `daily_reports.aiSummary` column (nullable; schema v1 → v2 migration)
+- Every AI call site falls back to the pre-AI v1 behavior on failure (no
+  key, no network, bad response) — nothing about the core loop depends on
+  AI working
+- Also fixed while touching this code: the reflection screen's
+  completion-rate calculation (which feeds `daily_reports` → History →
+  Insights) wasn't filtering out logged activities the way Today/Report
+  screens already did, so it could slightly overstate stored completion.
+  Now consistent everywhere.
+- **Not yet verified live on-device** — needs a real Gemini key (free,
+  from Google AI Studio) pasted into Settings and exercised through all
+  three flows before this gets marked done, per this project's Definition
+  of Done.
 
 ## Phase 10 — Multiple Check-ins
 - Configurable check-in frequency/quiet hours

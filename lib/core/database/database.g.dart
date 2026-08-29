@@ -286,9 +286,6 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES daily_plans (id) ON DELETE CASCADE',
-    ),
   );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
@@ -1015,9 +1012,6 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES daily_plans (id) ON DELETE CASCADE',
-    ),
   );
   static const VerificationMeta _scheduledForMeta = const VerificationMeta(
     'scheduledFor',
@@ -1393,9 +1387,7 @@ class $DailyReflectionsTable extends DailyReflections
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'UNIQUE REFERENCES daily_plans (id) ON DELETE CASCADE',
-    ),
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
   static const VerificationMeta _moodMeta = const VerificationMeta('mood');
   @override
@@ -1818,9 +1810,7 @@ class $DailyReportsTable extends DailyReports
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'UNIQUE REFERENCES daily_plans (id) ON DELETE CASCADE',
-    ),
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
   static const VerificationMeta _completionRateMeta = const VerificationMeta(
     'completionRate',
@@ -1844,12 +1834,24 @@ class $DailyReportsTable extends DailyReports
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _aiSummaryMeta = const VerificationMeta(
+    'aiSummary',
+  );
+  @override
+  late final GeneratedColumn<String> aiSummary = GeneratedColumn<String>(
+    'ai_summary',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     dailyPlanId,
     completionRate,
     generatedAt,
+    aiSummary,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1901,6 +1903,12 @@ class $DailyReportsTable extends DailyReports
     } else if (isInserting) {
       context.missing(_generatedAtMeta);
     }
+    if (data.containsKey('ai_summary')) {
+      context.handle(
+        _aiSummaryMeta,
+        aiSummary.isAcceptableOrUnknown(data['ai_summary']!, _aiSummaryMeta),
+      );
+    }
     return context;
   }
 
@@ -1926,6 +1934,10 @@ class $DailyReportsTable extends DailyReports
         DriftSqlType.dateTime,
         data['${effectivePrefix}generated_at'],
       )!,
+      aiSummary: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ai_summary'],
+      ),
     );
   }
 
@@ -1940,11 +1952,13 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
   final String dailyPlanId;
   final double completionRate;
   final DateTime generatedAt;
+  final String? aiSummary;
   const DailyReport({
     required this.id,
     required this.dailyPlanId,
     required this.completionRate,
     required this.generatedAt,
+    this.aiSummary,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1953,6 +1967,9 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
     map['daily_plan_id'] = Variable<String>(dailyPlanId);
     map['completion_rate'] = Variable<double>(completionRate);
     map['generated_at'] = Variable<DateTime>(generatedAt);
+    if (!nullToAbsent || aiSummary != null) {
+      map['ai_summary'] = Variable<String>(aiSummary);
+    }
     return map;
   }
 
@@ -1962,6 +1979,9 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
       dailyPlanId: Value(dailyPlanId),
       completionRate: Value(completionRate),
       generatedAt: Value(generatedAt),
+      aiSummary: aiSummary == null && nullToAbsent
+          ? const Value.absent()
+          : Value(aiSummary),
     );
   }
 
@@ -1975,6 +1995,7 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
       dailyPlanId: serializer.fromJson<String>(json['dailyPlanId']),
       completionRate: serializer.fromJson<double>(json['completionRate']),
       generatedAt: serializer.fromJson<DateTime>(json['generatedAt']),
+      aiSummary: serializer.fromJson<String?>(json['aiSummary']),
     );
   }
   @override
@@ -1985,6 +2006,7 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
       'dailyPlanId': serializer.toJson<String>(dailyPlanId),
       'completionRate': serializer.toJson<double>(completionRate),
       'generatedAt': serializer.toJson<DateTime>(generatedAt),
+      'aiSummary': serializer.toJson<String?>(aiSummary),
     };
   }
 
@@ -1993,11 +2015,13 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
     String? dailyPlanId,
     double? completionRate,
     DateTime? generatedAt,
+    Value<String?> aiSummary = const Value.absent(),
   }) => DailyReport(
     id: id ?? this.id,
     dailyPlanId: dailyPlanId ?? this.dailyPlanId,
     completionRate: completionRate ?? this.completionRate,
     generatedAt: generatedAt ?? this.generatedAt,
+    aiSummary: aiSummary.present ? aiSummary.value : this.aiSummary,
   );
   DailyReport copyWithCompanion(DailyReportsCompanion data) {
     return DailyReport(
@@ -2011,6 +2035,7 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
       generatedAt: data.generatedAt.present
           ? data.generatedAt.value
           : this.generatedAt,
+      aiSummary: data.aiSummary.present ? data.aiSummary.value : this.aiSummary,
     );
   }
 
@@ -2020,13 +2045,15 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
           ..write('id: $id, ')
           ..write('dailyPlanId: $dailyPlanId, ')
           ..write('completionRate: $completionRate, ')
-          ..write('generatedAt: $generatedAt')
+          ..write('generatedAt: $generatedAt, ')
+          ..write('aiSummary: $aiSummary')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, dailyPlanId, completionRate, generatedAt);
+  int get hashCode =>
+      Object.hash(id, dailyPlanId, completionRate, generatedAt, aiSummary);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2034,7 +2061,8 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
           other.id == this.id &&
           other.dailyPlanId == this.dailyPlanId &&
           other.completionRate == this.completionRate &&
-          other.generatedAt == this.generatedAt);
+          other.generatedAt == this.generatedAt &&
+          other.aiSummary == this.aiSummary);
 }
 
 class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
@@ -2042,12 +2070,14 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
   final Value<String> dailyPlanId;
   final Value<double> completionRate;
   final Value<DateTime> generatedAt;
+  final Value<String?> aiSummary;
   final Value<int> rowid;
   const DailyReportsCompanion({
     this.id = const Value.absent(),
     this.dailyPlanId = const Value.absent(),
     this.completionRate = const Value.absent(),
     this.generatedAt = const Value.absent(),
+    this.aiSummary = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DailyReportsCompanion.insert({
@@ -2055,6 +2085,7 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
     required String dailyPlanId,
     required double completionRate,
     required DateTime generatedAt,
+    this.aiSummary = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        dailyPlanId = Value(dailyPlanId),
@@ -2065,6 +2096,7 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
     Expression<String>? dailyPlanId,
     Expression<double>? completionRate,
     Expression<DateTime>? generatedAt,
+    Expression<String>? aiSummary,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2072,6 +2104,7 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
       if (dailyPlanId != null) 'daily_plan_id': dailyPlanId,
       if (completionRate != null) 'completion_rate': completionRate,
       if (generatedAt != null) 'generated_at': generatedAt,
+      if (aiSummary != null) 'ai_summary': aiSummary,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2081,6 +2114,7 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
     Value<String>? dailyPlanId,
     Value<double>? completionRate,
     Value<DateTime>? generatedAt,
+    Value<String?>? aiSummary,
     Value<int>? rowid,
   }) {
     return DailyReportsCompanion(
@@ -2088,6 +2122,7 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
       dailyPlanId: dailyPlanId ?? this.dailyPlanId,
       completionRate: completionRate ?? this.completionRate,
       generatedAt: generatedAt ?? this.generatedAt,
+      aiSummary: aiSummary ?? this.aiSummary,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2107,6 +2142,9 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
     if (generatedAt.present) {
       map['generated_at'] = Variable<DateTime>(generatedAt.value);
     }
+    if (aiSummary.present) {
+      map['ai_summary'] = Variable<String>(aiSummary.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2120,6 +2158,7 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
           ..write('dailyPlanId: $dailyPlanId, ')
           ..write('completionRate: $completionRate, ')
           ..write('generatedAt: $generatedAt, ')
+          ..write('aiSummary: $aiSummary, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2147,133 +2186,22 @@ abstract class _$PulseDatabase extends GeneratedDatabase {
     dailyReflections,
     dailyReports,
   ];
-  @override
-  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'daily_plans',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('tasks', kind: UpdateKind.delete)],
-    ),
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'daily_plans',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('check_ins', kind: UpdateKind.delete)],
-    ),
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'daily_plans',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('daily_reflections', kind: UpdateKind.delete)],
-    ),
-    WritePropagation(
-      on: TableUpdateQuery.onTableName(
-        'daily_plans',
-        limitUpdateKind: UpdateKind.delete,
-      ),
-      result: [TableUpdate('daily_reports', kind: UpdateKind.delete)],
-    ),
-  ]);
 }
 
-typedef $$DailyPlansTableCreateCompanionBuilder = DailyPlansCompanion Function({
-  required String id,
-  required DateTime date,
-  required DateTime createdAt,
-  Value<int> rowid,
-});
-typedef $$DailyPlansTableUpdateCompanionBuilder = DailyPlansCompanion Function({
-  Value<String> id,
-  Value<DateTime> date,
-  Value<DateTime> createdAt,
-  Value<int> rowid,
-});
-
-final class $$DailyPlansTableReferences
-    extends BaseReferences<_$PulseDatabase, $DailyPlansTable, DailyPlan> {
-  $$DailyPlansTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$TasksTable, List<Task>> _tasksRefsTable(
-    _$PulseDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.tasks,
-    aliasName: 'daily_plans__id__tasks__daily_plan_id',
-  );
-
-  $$TasksTableProcessedTableManager get tasksRefs {
-    final manager = $$TasksTableTableManager(
-      $_db,
-      $_db.tasks,
-    ).filter((f) => f.dailyPlanId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_tasksRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$CheckInsTable, List<CheckIn>> _checkInsRefsTable(
-    _$PulseDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.checkIns,
-    aliasName: 'daily_plans__id__check_ins__daily_plan_id',
-  );
-
-  $$CheckInsTableProcessedTableManager get checkInsRefs {
-    final manager = $$CheckInsTableTableManager(
-      $_db,
-      $_db.checkIns,
-    ).filter((f) => f.dailyPlanId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_checkInsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$DailyReflectionsTable, List<DailyReflection>>
-  _dailyReflectionsRefsTable(_$PulseDatabase db) =>
-      MultiTypedResultKey.fromTable(
-        db.dailyReflections,
-        aliasName: 'daily_plans__id__daily_reflections__daily_plan_id',
-      );
-
-  $$DailyReflectionsTableProcessedTableManager get dailyReflectionsRefs {
-    final manager = $$DailyReflectionsTableTableManager(
-      $_db,
-      $_db.dailyReflections,
-    ).filter((f) => f.dailyPlanId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _dailyReflectionsRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$DailyReportsTable, List<DailyReport>>
-  _dailyReportsRefsTable(_$PulseDatabase db) => MultiTypedResultKey.fromTable(
-    db.dailyReports,
-    aliasName: 'daily_plans__id__daily_reports__daily_plan_id',
-  );
-
-  $$DailyReportsTableProcessedTableManager get dailyReportsRefs {
-    final manager = $$DailyReportsTableTableManager(
-      $_db,
-      $_db.dailyReports,
-    ).filter((f) => f.dailyPlanId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_dailyReportsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
+typedef $$DailyPlansTableCreateCompanionBuilder =
+    DailyPlansCompanion Function({
+      required String id,
+      required DateTime date,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$DailyPlansTableUpdateCompanionBuilder =
+    DailyPlansCompanion Function({
+      Value<String> id,
+      Value<DateTime> date,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
 
 class $$DailyPlansTableFilterComposer
     extends Composer<_$PulseDatabase, $DailyPlansTable> {
@@ -2298,106 +2226,6 @@ class $$DailyPlansTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
-
-  Expression<bool> tasksRefs(
-    Expression<bool> Function($$TasksTableFilterComposer f) f,
-  ) {
-    final $$TasksTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.tasks,
-      getReferencedColumn: (t) => t.dailyPlanId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TasksTableFilterComposer(
-            $db: $db,
-            $table: $db.tasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> checkInsRefs(
-    Expression<bool> Function($$CheckInsTableFilterComposer f) f,
-  ) {
-    final $$CheckInsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.checkIns,
-      getReferencedColumn: (t) => t.dailyPlanId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$CheckInsTableFilterComposer(
-            $db: $db,
-            $table: $db.checkIns,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> dailyReflectionsRefs(
-    Expression<bool> Function($$DailyReflectionsTableFilterComposer f) f,
-  ) {
-    final $$DailyReflectionsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.dailyReflections,
-      getReferencedColumn: (t) => t.dailyPlanId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyReflectionsTableFilterComposer(
-            $db: $db,
-            $table: $db.dailyReflections,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> dailyReportsRefs(
-    Expression<bool> Function($$DailyReportsTableFilterComposer f) f,
-  ) {
-    final $$DailyReportsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.dailyReports,
-      getReferencedColumn: (t) => t.dailyPlanId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyReportsTableFilterComposer(
-            $db: $db,
-            $table: $db.dailyReports,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$DailyPlansTableOrderingComposer
@@ -2442,106 +2270,6 @@ class $$DailyPlansTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  Expression<T> tasksRefs<T extends Object>(
-    Expression<T> Function($$TasksTableAnnotationComposer a) f,
-  ) {
-    final $$TasksTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.tasks,
-      getReferencedColumn: (t) => t.dailyPlanId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TasksTableAnnotationComposer(
-            $db: $db,
-            $table: $db.tasks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> checkInsRefs<T extends Object>(
-    Expression<T> Function($$CheckInsTableAnnotationComposer a) f,
-  ) {
-    final $$CheckInsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.checkIns,
-      getReferencedColumn: (t) => t.dailyPlanId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$CheckInsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.checkIns,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> dailyReflectionsRefs<T extends Object>(
-    Expression<T> Function($$DailyReflectionsTableAnnotationComposer a) f,
-  ) {
-    final $$DailyReflectionsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.dailyReflections,
-      getReferencedColumn: (t) => t.dailyPlanId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyReflectionsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.dailyReflections,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> dailyReportsRefs<T extends Object>(
-    Expression<T> Function($$DailyReportsTableAnnotationComposer a) f,
-  ) {
-    final $$DailyReportsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.dailyReports,
-      getReferencedColumn: (t) => t.dailyPlanId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyReportsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.dailyReports,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$DailyPlansTableTableManager
@@ -2555,14 +2283,12 @@ class $$DailyPlansTableTableManager
           $$DailyPlansTableAnnotationComposer,
           $$DailyPlansTableCreateCompanionBuilder,
           $$DailyPlansTableUpdateCompanionBuilder,
-          (DailyPlan, $$DailyPlansTableReferences),
+          (
+            DailyPlan,
+            BaseReferences<_$PulseDatabase, $DailyPlansTable, DailyPlan>,
+          ),
           DailyPlan,
-          PrefetchHooks Function({
-            bool tasksRefs,
-            bool checkInsRefs,
-            bool dailyReflectionsRefs,
-            bool dailyReportsRefs,
-          })
+          PrefetchHooks Function()
         > {
   $$DailyPlansTableTableManager(_$PulseDatabase db, $DailyPlansTable table)
     : super(
@@ -2600,119 +2326,9 @@ class $$DailyPlansTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$DailyPlansTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback:
-              ({
-                tasksRefs = false,
-                checkInsRefs = false,
-                dailyReflectionsRefs = false,
-                dailyReportsRefs = false,
-              }) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [
-                    if (tasksRefs) db.tasks,
-                    if (checkInsRefs) db.checkIns,
-                    if (dailyReflectionsRefs) db.dailyReflections,
-                    if (dailyReportsRefs) db.dailyReports,
-                  ],
-                  addJoins: null,
-                  getPrefetchedDataCallback: (items) async {
-                    return [
-                      if (tasksRefs)
-                        await $_getPrefetchedData<
-                          DailyPlan,
-                          $DailyPlansTable,
-                          Task
-                        >(
-                          currentTable: table,
-                          referencedTable: $$DailyPlansTableReferences
-                              ._tasksRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$DailyPlansTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).tasksRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.dailyPlanId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (checkInsRefs)
-                        await $_getPrefetchedData<
-                          DailyPlan,
-                          $DailyPlansTable,
-                          CheckIn
-                        >(
-                          currentTable: table,
-                          referencedTable: $$DailyPlansTableReferences
-                              ._checkInsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$DailyPlansTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).checkInsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.dailyPlanId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (dailyReflectionsRefs)
-                        await $_getPrefetchedData<
-                          DailyPlan,
-                          $DailyPlansTable,
-                          DailyReflection
-                        >(
-                          currentTable: table,
-                          referencedTable: $$DailyPlansTableReferences
-                              ._dailyReflectionsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$DailyPlansTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).dailyReflectionsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.dailyPlanId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (dailyReportsRefs)
-                        await $_getPrefetchedData<
-                          DailyPlan,
-                          $DailyPlansTable,
-                          DailyReport
-                        >(
-                          currentTable: table,
-                          referencedTable: $$DailyPlansTableReferences
-                              ._dailyReportsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$DailyPlansTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).dailyReportsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.dailyPlanId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                    ];
-                  },
-                );
-              },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -2727,67 +2343,42 @@ typedef $$DailyPlansTableProcessedTableManager =
       $$DailyPlansTableAnnotationComposer,
       $$DailyPlansTableCreateCompanionBuilder,
       $$DailyPlansTableUpdateCompanionBuilder,
-      (DailyPlan, $$DailyPlansTableReferences),
+      (DailyPlan, BaseReferences<_$PulseDatabase, $DailyPlansTable, DailyPlan>),
       DailyPlan,
-      PrefetchHooks Function({
-        bool tasksRefs,
-        bool checkInsRefs,
-        bool dailyReflectionsRefs,
-        bool dailyReportsRefs,
-      })
+      PrefetchHooks Function()
     >;
-typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
-  required String id,
-  required String dailyPlanId,
-  required String title,
-  Value<String?> description,
-  Value<String> status,
-  Value<String> priority,
-  required DateTime createdAt,
-  Value<DateTime?> completedAt,
-  required DateTime plannedFor,
-  Value<int?> estimatedDuration,
-  Value<int?> actualDuration,
-  Value<String> source,
-  Value<int> rowid,
-});
-typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
-  Value<String> id,
-  Value<String> dailyPlanId,
-  Value<String> title,
-  Value<String?> description,
-  Value<String> status,
-  Value<String> priority,
-  Value<DateTime> createdAt,
-  Value<DateTime?> completedAt,
-  Value<DateTime> plannedFor,
-  Value<int?> estimatedDuration,
-  Value<int?> actualDuration,
-  Value<String> source,
-  Value<int> rowid,
-});
-
-final class $$TasksTableReferences
-    extends BaseReferences<_$PulseDatabase, $TasksTable, Task> {
-  $$TasksTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $DailyPlansTable _dailyPlanIdTable(_$PulseDatabase db) =>
-      db.dailyPlans.createAlias('tasks__daily_plan_id__daily_plans__id');
-
-  $$DailyPlansTableProcessedTableManager get dailyPlanId {
-    final $_column = $_itemColumn<String>('daily_plan_id')!;
-
-    final manager = $$DailyPlansTableTableManager(
-      $_db,
-      $_db.dailyPlans,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_dailyPlanIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
+typedef $$TasksTableCreateCompanionBuilder =
+    TasksCompanion Function({
+      required String id,
+      required String dailyPlanId,
+      required String title,
+      Value<String?> description,
+      Value<String> status,
+      Value<String> priority,
+      required DateTime createdAt,
+      Value<DateTime?> completedAt,
+      required DateTime plannedFor,
+      Value<int?> estimatedDuration,
+      Value<int?> actualDuration,
+      Value<String> source,
+      Value<int> rowid,
+    });
+typedef $$TasksTableUpdateCompanionBuilder =
+    TasksCompanion Function({
+      Value<String> id,
+      Value<String> dailyPlanId,
+      Value<String> title,
+      Value<String?> description,
+      Value<String> status,
+      Value<String> priority,
+      Value<DateTime> createdAt,
+      Value<DateTime?> completedAt,
+      Value<DateTime> plannedFor,
+      Value<int?> estimatedDuration,
+      Value<int?> actualDuration,
+      Value<String> source,
+      Value<int> rowid,
+    });
 
 class $$TasksTableFilterComposer
     extends Composer<_$PulseDatabase, $TasksTable> {
@@ -2800,6 +2391,11 @@ class $$TasksTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2852,29 +2448,6 @@ class $$TasksTableFilterComposer
     column: $table.source,
     builder: (column) => ColumnFilters(column),
   );
-
-  $$DailyPlansTableFilterComposer get dailyPlanId {
-    final $$DailyPlansTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableFilterComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$TasksTableOrderingComposer
@@ -2888,6 +2461,11 @@ class $$TasksTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2940,29 +2518,6 @@ class $$TasksTableOrderingComposer
     column: $table.source,
     builder: (column) => ColumnOrderings(column),
   );
-
-  $$DailyPlansTableOrderingComposer get dailyPlanId {
-    final $$DailyPlansTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableOrderingComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$TasksTableAnnotationComposer
@@ -2976,6 +2531,11 @@ class $$TasksTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
@@ -3016,29 +2576,6 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<String> get source =>
       $composableBuilder(column: $table.source, builder: (column) => column);
-
-  $$DailyPlansTableAnnotationComposer get dailyPlanId {
-    final $$DailyPlansTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableAnnotationComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$TasksTableTableManager
@@ -3052,9 +2589,9 @@ class $$TasksTableTableManager
           $$TasksTableAnnotationComposer,
           $$TasksTableCreateCompanionBuilder,
           $$TasksTableUpdateCompanionBuilder,
-          (Task, $$TasksTableReferences),
+          (Task, BaseReferences<_$PulseDatabase, $TasksTable, Task>),
           Task,
-          PrefetchHooks Function({bool dailyPlanId})
+          PrefetchHooks Function()
         > {
   $$TasksTableTableManager(_$PulseDatabase db, $TasksTable table)
     : super(
@@ -3128,50 +2665,9 @@ class $$TasksTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) =>
-                    (e.readTable(table), $$TasksTableReferences(db, table, e)),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({dailyPlanId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (dailyPlanId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.dailyPlanId,
-                        referencedTable: $$TasksTableReferences
-                            ._dailyPlanIdTable(db),
-                        referencedColumn: $$TasksTableReferences
-                            ._dailyPlanIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -3186,48 +2682,28 @@ typedef $$TasksTableProcessedTableManager =
       $$TasksTableAnnotationComposer,
       $$TasksTableCreateCompanionBuilder,
       $$TasksTableUpdateCompanionBuilder,
-      (Task, $$TasksTableReferences),
+      (Task, BaseReferences<_$PulseDatabase, $TasksTable, Task>),
       Task,
-      PrefetchHooks Function({bool dailyPlanId})
+      PrefetchHooks Function()
     >;
-typedef $$CheckInsTableCreateCompanionBuilder = CheckInsCompanion Function({
-  required String id,
-  required String dailyPlanId,
-  required DateTime scheduledFor,
-  Value<DateTime?> respondedAt,
-  Value<String> status,
-  Value<int> rowid,
-});
-typedef $$CheckInsTableUpdateCompanionBuilder = CheckInsCompanion Function({
-  Value<String> id,
-  Value<String> dailyPlanId,
-  Value<DateTime> scheduledFor,
-  Value<DateTime?> respondedAt,
-  Value<String> status,
-  Value<int> rowid,
-});
-
-final class $$CheckInsTableReferences
-    extends BaseReferences<_$PulseDatabase, $CheckInsTable, CheckIn> {
-  $$CheckInsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $DailyPlansTable _dailyPlanIdTable(_$PulseDatabase db) =>
-      db.dailyPlans.createAlias('check_ins__daily_plan_id__daily_plans__id');
-
-  $$DailyPlansTableProcessedTableManager get dailyPlanId {
-    final $_column = $_itemColumn<String>('daily_plan_id')!;
-
-    final manager = $$DailyPlansTableTableManager(
-      $_db,
-      $_db.dailyPlans,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_dailyPlanIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
+typedef $$CheckInsTableCreateCompanionBuilder =
+    CheckInsCompanion Function({
+      required String id,
+      required String dailyPlanId,
+      required DateTime scheduledFor,
+      Value<DateTime?> respondedAt,
+      Value<String> status,
+      Value<int> rowid,
+    });
+typedef $$CheckInsTableUpdateCompanionBuilder =
+    CheckInsCompanion Function({
+      Value<String> id,
+      Value<String> dailyPlanId,
+      Value<DateTime> scheduledFor,
+      Value<DateTime?> respondedAt,
+      Value<String> status,
+      Value<int> rowid,
+    });
 
 class $$CheckInsTableFilterComposer
     extends Composer<_$PulseDatabase, $CheckInsTable> {
@@ -3240,6 +2716,11 @@ class $$CheckInsTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3257,29 +2738,6 @@ class $$CheckInsTableFilterComposer
     column: $table.status,
     builder: (column) => ColumnFilters(column),
   );
-
-  $$DailyPlansTableFilterComposer get dailyPlanId {
-    final $$DailyPlansTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableFilterComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$CheckInsTableOrderingComposer
@@ -3293,6 +2751,11 @@ class $$CheckInsTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3310,29 +2773,6 @@ class $$CheckInsTableOrderingComposer
     column: $table.status,
     builder: (column) => ColumnOrderings(column),
   );
-
-  $$DailyPlansTableOrderingComposer get dailyPlanId {
-    final $$DailyPlansTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableOrderingComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$CheckInsTableAnnotationComposer
@@ -3347,6 +2787,11 @@ class $$CheckInsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get scheduledFor => $composableBuilder(
     column: $table.scheduledFor,
     builder: (column) => column,
@@ -3359,29 +2804,6 @@ class $$CheckInsTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
-
-  $$DailyPlansTableAnnotationComposer get dailyPlanId {
-    final $$DailyPlansTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableAnnotationComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$CheckInsTableTableManager
@@ -3395,9 +2817,9 @@ class $$CheckInsTableTableManager
           $$CheckInsTableAnnotationComposer,
           $$CheckInsTableCreateCompanionBuilder,
           $$CheckInsTableUpdateCompanionBuilder,
-          (CheckIn, $$CheckInsTableReferences),
+          (CheckIn, BaseReferences<_$PulseDatabase, $CheckInsTable, CheckIn>),
           CheckIn,
-          PrefetchHooks Function({bool dailyPlanId})
+          PrefetchHooks Function()
         > {
   $$CheckInsTableTableManager(_$PulseDatabase db, $CheckInsTable table)
     : super(
@@ -3443,52 +2865,9 @@ class $$CheckInsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$CheckInsTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({dailyPlanId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (dailyPlanId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.dailyPlanId,
-                        referencedTable: $$CheckInsTableReferences
-                            ._dailyPlanIdTable(db),
-                        referencedColumn: $$CheckInsTableReferences
-                            ._dailyPlanIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -3503,9 +2882,9 @@ typedef $$CheckInsTableProcessedTableManager =
       $$CheckInsTableAnnotationComposer,
       $$CheckInsTableCreateCompanionBuilder,
       $$CheckInsTableUpdateCompanionBuilder,
-      (CheckIn, $$CheckInsTableReferences),
+      (CheckIn, BaseReferences<_$PulseDatabase, $CheckInsTable, CheckIn>),
       CheckIn,
-      PrefetchHooks Function({bool dailyPlanId})
+      PrefetchHooks Function()
     >;
 typedef $$DailyReflectionsTableCreateCompanionBuilder =
     DailyReflectionsCompanion Function({
@@ -3528,37 +2907,6 @@ typedef $$DailyReflectionsTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-final class $$DailyReflectionsTableReferences
-    extends
-        BaseReferences<
-          _$PulseDatabase,
-          $DailyReflectionsTable,
-          DailyReflection
-        > {
-  $$DailyReflectionsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $DailyPlansTable _dailyPlanIdTable(_$PulseDatabase db) => db.dailyPlans
-      .createAlias('daily_reflections__daily_plan_id__daily_plans__id');
-
-  $$DailyPlansTableProcessedTableManager get dailyPlanId {
-    final $_column = $_itemColumn<String>('daily_plan_id')!;
-
-    final manager = $$DailyPlansTableTableManager(
-      $_db,
-      $_db.dailyPlans,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_dailyPlanIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
 class $$DailyReflectionsTableFilterComposer
     extends Composer<_$PulseDatabase, $DailyReflectionsTable> {
   $$DailyReflectionsTableFilterComposer({
@@ -3570,6 +2918,11 @@ class $$DailyReflectionsTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3592,29 +2945,6 @@ class $$DailyReflectionsTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
-
-  $$DailyPlansTableFilterComposer get dailyPlanId {
-    final $$DailyPlansTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableFilterComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$DailyReflectionsTableOrderingComposer
@@ -3628,6 +2958,11 @@ class $$DailyReflectionsTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3650,29 +2985,6 @@ class $$DailyReflectionsTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  $$DailyPlansTableOrderingComposer get dailyPlanId {
-    final $$DailyPlansTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableOrderingComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$DailyReflectionsTableAnnotationComposer
@@ -3686,6 +2998,11 @@ class $$DailyReflectionsTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get mood =>
       $composableBuilder(column: $table.mood, builder: (column) => column);
@@ -3702,29 +3019,6 @@ class $$DailyReflectionsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  $$DailyPlansTableAnnotationComposer get dailyPlanId {
-    final $$DailyPlansTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableAnnotationComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
 }
 
 class $$DailyReflectionsTableTableManager
@@ -3738,9 +3032,16 @@ class $$DailyReflectionsTableTableManager
           $$DailyReflectionsTableAnnotationComposer,
           $$DailyReflectionsTableCreateCompanionBuilder,
           $$DailyReflectionsTableUpdateCompanionBuilder,
-          (DailyReflection, $$DailyReflectionsTableReferences),
+          (
+            DailyReflection,
+            BaseReferences<
+              _$PulseDatabase,
+              $DailyReflectionsTable,
+              DailyReflection
+            >,
+          ),
           DailyReflection,
-          PrefetchHooks Function({bool dailyPlanId})
+          PrefetchHooks Function()
         > {
   $$DailyReflectionsTableTableManager(
     _$PulseDatabase db,
@@ -3792,52 +3093,9 @@ class $$DailyReflectionsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$DailyReflectionsTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({dailyPlanId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (dailyPlanId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.dailyPlanId,
-                        referencedTable: $$DailyReflectionsTableReferences
-                            ._dailyPlanIdTable(db),
-                        referencedColumn: $$DailyReflectionsTableReferences
-                            ._dailyPlanIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -3852,9 +3110,16 @@ typedef $$DailyReflectionsTableProcessedTableManager =
       $$DailyReflectionsTableAnnotationComposer,
       $$DailyReflectionsTableCreateCompanionBuilder,
       $$DailyReflectionsTableUpdateCompanionBuilder,
-      (DailyReflection, $$DailyReflectionsTableReferences),
+      (
+        DailyReflection,
+        BaseReferences<
+          _$PulseDatabase,
+          $DailyReflectionsTable,
+          DailyReflection
+        >,
+      ),
       DailyReflection,
-      PrefetchHooks Function({bool dailyPlanId})
+      PrefetchHooks Function()
     >;
 typedef $$DailyReportsTableCreateCompanionBuilder =
     DailyReportsCompanion Function({
@@ -3862,6 +3127,7 @@ typedef $$DailyReportsTableCreateCompanionBuilder =
       required String dailyPlanId,
       required double completionRate,
       required DateTime generatedAt,
+      Value<String?> aiSummary,
       Value<int> rowid,
     });
 typedef $$DailyReportsTableUpdateCompanionBuilder =
@@ -3870,30 +3136,9 @@ typedef $$DailyReportsTableUpdateCompanionBuilder =
       Value<String> dailyPlanId,
       Value<double> completionRate,
       Value<DateTime> generatedAt,
+      Value<String?> aiSummary,
       Value<int> rowid,
     });
-
-final class $$DailyReportsTableReferences
-    extends BaseReferences<_$PulseDatabase, $DailyReportsTable, DailyReport> {
-  $$DailyReportsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $DailyPlansTable _dailyPlanIdTable(_$PulseDatabase db) => db.dailyPlans
-      .createAlias('daily_reports__daily_plan_id__daily_plans__id');
-
-  $$DailyPlansTableProcessedTableManager get dailyPlanId {
-    final $_column = $_itemColumn<String>('daily_plan_id')!;
-
-    final manager = $$DailyPlansTableTableManager(
-      $_db,
-      $_db.dailyPlans,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_dailyPlanIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
 
 class $$DailyReportsTableFilterComposer
     extends Composer<_$PulseDatabase, $DailyReportsTable> {
@@ -3909,6 +3154,11 @@ class $$DailyReportsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<double> get completionRate => $composableBuilder(
     column: $table.completionRate,
     builder: (column) => ColumnFilters(column),
@@ -3919,28 +3169,10 @@ class $$DailyReportsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$DailyPlansTableFilterComposer get dailyPlanId {
-    final $$DailyPlansTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableFilterComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
+  ColumnFilters<String> get aiSummary => $composableBuilder(
+    column: $table.aiSummary,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$DailyReportsTableOrderingComposer
@@ -3957,6 +3189,11 @@ class $$DailyReportsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get completionRate => $composableBuilder(
     column: $table.completionRate,
     builder: (column) => ColumnOrderings(column),
@@ -3967,28 +3204,10 @@ class $$DailyReportsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$DailyPlansTableOrderingComposer get dailyPlanId {
-    final $$DailyPlansTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableOrderingComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
+  ColumnOrderings<String> get aiSummary => $composableBuilder(
+    column: $table.aiSummary,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DailyReportsTableAnnotationComposer
@@ -4003,6 +3222,11 @@ class $$DailyReportsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<String> get dailyPlanId => $composableBuilder(
+    column: $table.dailyPlanId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<double> get completionRate => $composableBuilder(
     column: $table.completionRate,
     builder: (column) => column,
@@ -4013,28 +3237,8 @@ class $$DailyReportsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  $$DailyPlansTableAnnotationComposer get dailyPlanId {
-    final $$DailyPlansTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.dailyPlanId,
-      referencedTable: $db.dailyPlans,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$DailyPlansTableAnnotationComposer(
-            $db: $db,
-            $table: $db.dailyPlans,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
+  GeneratedColumn<String> get aiSummary =>
+      $composableBuilder(column: $table.aiSummary, builder: (column) => column);
 }
 
 class $$DailyReportsTableTableManager
@@ -4048,9 +3252,12 @@ class $$DailyReportsTableTableManager
           $$DailyReportsTableAnnotationComposer,
           $$DailyReportsTableCreateCompanionBuilder,
           $$DailyReportsTableUpdateCompanionBuilder,
-          (DailyReport, $$DailyReportsTableReferences),
+          (
+            DailyReport,
+            BaseReferences<_$PulseDatabase, $DailyReportsTable, DailyReport>,
+          ),
           DailyReport,
-          PrefetchHooks Function({bool dailyPlanId})
+          PrefetchHooks Function()
         > {
   $$DailyReportsTableTableManager(_$PulseDatabase db, $DailyReportsTable table)
     : super(
@@ -4069,12 +3276,14 @@ class $$DailyReportsTableTableManager
                 Value<String> dailyPlanId = const Value.absent(),
                 Value<double> completionRate = const Value.absent(),
                 Value<DateTime> generatedAt = const Value.absent(),
+                Value<String?> aiSummary = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DailyReportsCompanion(
                 id: id,
                 dailyPlanId: dailyPlanId,
                 completionRate: completionRate,
                 generatedAt: generatedAt,
+                aiSummary: aiSummary,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4083,61 +3292,20 @@ class $$DailyReportsTableTableManager
                 required String dailyPlanId,
                 required double completionRate,
                 required DateTime generatedAt,
+                Value<String?> aiSummary = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DailyReportsCompanion.insert(
                 id: id,
                 dailyPlanId: dailyPlanId,
                 completionRate: completionRate,
                 generatedAt: generatedAt,
+                aiSummary: aiSummary,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$DailyReportsTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({dailyPlanId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (dailyPlanId) {
-                      state = state.withJoin(
-                        currentTable: table,
-                        currentColumn: table.dailyPlanId,
-                        referencedTable: $$DailyReportsTableReferences
-                            ._dailyPlanIdTable(db),
-                        referencedColumn: $$DailyReportsTableReferences
-                            ._dailyPlanIdTable(db)
-                            .id,
-                      ) as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -4152,9 +3320,12 @@ typedef $$DailyReportsTableProcessedTableManager =
       $$DailyReportsTableAnnotationComposer,
       $$DailyReportsTableCreateCompanionBuilder,
       $$DailyReportsTableUpdateCompanionBuilder,
-      (DailyReport, $$DailyReportsTableReferences),
+      (
+        DailyReport,
+        BaseReferences<_$PulseDatabase, $DailyReportsTable, DailyReport>,
+      ),
       DailyReport,
-      PrefetchHooks Function({bool dailyPlanId})
+      PrefetchHooks Function()
     >;
 
 class $PulseDatabaseManager {

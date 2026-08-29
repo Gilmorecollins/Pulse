@@ -6,9 +6,9 @@
 - **Riverpod** for state management
 - **GoRouter** for navigation
 - **Drift** (SQLite) for local persistence — source of truth for v1
-- Backend: none in v1. A thin proxy service is added only when AI features
-  land (Phase 9+), and only to hold the Gemini API key — it never owns
-  app data.
+- Backend: none. AI (Phase 9+) calls Gemini directly from the app — see
+  docs/API.md for why that's the right call for a single personal
+  install, and why that could change if Pulse is ever distributed.
 
 ## Why local-first
 
@@ -91,10 +91,10 @@ check-in is proven reliable across Doze/battery-optimization states on a
 real device — that's a scheduling reliability problem worth its own spike,
 not something to assume works.
 
-## AI (deferred to Phase 9+)
+## AI (Phase 9+)
 
-When added: Gemini (free tier, Flash model) called from the proxy backend
-only. Flow always follows the original spec's rule (§18):
+Gemini (free tier, `gemini-flash-latest`) called directly from the app —
+see docs/API.md. Flow always follows the original spec's rule (§18):
 
 ```
 User input → AI interpretation → structured response → validation →
