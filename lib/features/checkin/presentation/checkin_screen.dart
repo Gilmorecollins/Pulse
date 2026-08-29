@@ -82,12 +82,16 @@ class _TaskCheckInList extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: ListView.separated(
+          child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-            itemCount: tasks.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) =>
-                _CheckInTaskCard(task: tasks[index]),
+            children: [
+              for (final task in tasks) ...[
+                _CheckInTaskCard(task: task),
+                const SizedBox(height: 12),
+              ],
+              const SizedBox(height: 8),
+              const _LogActivityCard(),
+            ],
           ),
         ),
         Padding(
@@ -173,6 +177,98 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
+/// The "I had a meeting with the director" affordance — logging something
+/// that happened outside the morning plan. This is what differentiates
+/// Pulse from a plain to-do list (see docs/PRODUCT.md).
+class _LogActivityCard extends ConsumerStatefulWidget {
+  const _LogActivityCard();
+
+  @override
+  ConsumerState<_LogActivityCard> createState() => _LogActivityCardState();
+}
+
+class _LogActivityCardState extends ConsumerState<_LogActivityCard> {
+  final _controller = TextEditingController();
+  bool _adding = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _add() async {
+    final title = _controller.text.trim();
+    if (title.isEmpty) return;
+
+    setState(() => _adding = true);
+    final plan = await ref.read(todayPlanProvider.future);
+    await ref
+        .read(todayRepositoryProvider)
+        .addActivity(dailyPlanId: plan.id, title: title);
+    _controller.clear();
+    if (mounted) {
+      setState(() => _adding = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Added "$title" to today\'s activities')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Did something else come up?',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'e.g. "Had a meeting with the director"',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      hintText: 'What happened?',
+                      border: OutlineInputBorder(),
+                    ),
+                    onSubmitted: (_) => _add(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filled(
+                  onPressed: _adding ? null : _add,
+                  icon: _adding
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.add),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _NothingPending extends StatelessWidget {
   const _NothingPending({required this.onDone});
 
@@ -180,35 +276,45 @@ class _NothingPending extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 40,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              Column(
+                children: [
+                  const SizedBox(height: 24),
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 40,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Nothing pending right now.',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Everything on today\'s plan is already completed or '
+                    'cancelled.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+              const _LogActivityCard(),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Nothing pending right now.',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Everything on today\'s plan is already completed or '
-            'cancelled.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(onPressed: onDone, child: const Text('Done')),
-          ),
-        ],
-      ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: FilledButton(onPressed: onDone, child: const Text('Done')),
+        ),
+      ],
     );
   }
 }
