@@ -7,6 +7,7 @@ import '../../features/history/presentation/history_screen.dart';
 import '../../features/insights/presentation/insights_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/reflection/presentation/reflection_screen.dart';
+import '../../features/report/presentation/report_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/today/presentation/today_screen.dart';
 import '../preferences/preferences_provider.dart';
@@ -35,6 +36,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/reflection',
         builder: (context, state) => const ReflectionScreen(),
+      ),
+      GoRoute(
+        path: '/report/:planId',
+        builder: (context, state) =>
+            ReportScreen(planId: state.pathParameters['planId']!),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
