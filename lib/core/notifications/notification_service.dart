@@ -6,21 +6,28 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Wraps local notification scheduling for Pulse's daily check-in (see
-/// docs/ARCHITECTURE.md — "Notifications / check-in scheduling"). v1
-/// schedules exactly one repeating daily notification; multiple
-/// check-ins/day is deferred to ROADMAP Phase 10, which needs its own
-/// reliability pass under Android's Doze/battery-optimization behavior.
+/// Wraps local notification scheduling for Pulse (see
+/// docs/ARCHITECTURE.md — "Notifications / check-in scheduling"). Check-ins
+/// are per-task: each task with an expected completion time gets its own
+/// one-time notification 5 minutes before, rather than one fixed daily
+/// prompt.
 class NotificationService {
   NotificationService() : _plugin = FlutterLocalNotificationsPlugin();
 
   final FlutterLocalNotificationsPlugin _plugin;
   final _tapController = StreamController<String?>.broadcast();
 
-  static const checkInNotificationId = 1;
   static const reflectionNotificationId = 2;
-  static const _checkInChannelId = 'pulse_checkin';
-  static const _reflectionChannelId = 'pulse_reflection';
+  static const checkInLeadTime = Duration(minutes: 5);
+  // _v2 (custom sound) — Android notification channels are immutable
+  // once created, so changing the sound requires a new channel id rather
+  // than editing the existing one; an install that already created the
+  // old channel would otherwise keep the default sound forever.
+  static const _checkInChannelId = 'pulse_checkin_v2';
+  static const _reflectionChannelId = 'pulse_reflection_v2';
+  static const _checkInSound = RawResourceAndroidNotificationSound(
+    'f1_checkin',
+  );
 
   bool _initialized = false;
 
@@ -60,8 +67,9 @@ class NotificationService {
       const AndroidNotificationChannel(
         _checkInChannelId,
         'Pulse Check-in',
-        description: "Pulse's daily check-in on how your day is going.",
+        description: "Pulse's per-task check-ins.",
         importance: Importance.high,
+        sound: _checkInSound,
       ),
     );
     await android?.createNotificationChannel(
@@ -70,6 +78,7 @@ class NotificationService {
         'Pulse Reflection',
         description: "Pulse's end-of-day reflection.",
         importance: Importance.high,
+        sound: _checkInSound,
       ),
     );
 
@@ -93,28 +102,48 @@ class NotificationService {
     await android?.requestExactAlarmsPermission();
   }
 
-  Future<void> scheduleDailyCheckIn(TimeOfDay time) async {
+  /// A stable per-task notification ID derived from the task's UUID, so
+  /// the same task always maps to the same OS-level id and can be
+  /// cancelled later just by recomputing it — no separate ID-tracking
+  /// table needed. Masked to a positive 31-bit int (platform requirement)
+  /// and offset well clear of the fixed `reflectionNotificationId`.
+  static int _taskNotificationId(String taskId) =>
+      1000 + (taskId.hashCode & 0x7fffffff) % 1000000000;
+
+  /// Schedules a one-time check-in [checkInLeadTime] before
+  /// [completionTime]. Silently skips if that moment has already passed —
+  /// nothing to remind about.
+  Future<void> scheduleTaskCheckIn(
+    String taskId,
+    String taskTitle,
+    DateTime completionTime,
+  ) async {
+    final fireAt = completionTime.subtract(checkInLeadTime);
+    if (fireAt.isBefore(DateTime.now())) return;
+
     await _plugin.zonedSchedule(
-      checkInNotificationId,
+      _taskNotificationId(taskId),
       '⚡ Pulse Check-in',
-      'What are you working on right now?',
-      _nextInstanceOf(time),
+      "Almost time for '$taskTitle' — how's it going?",
+      tz.TZDateTime.from(fireAt, tz.local),
       const NotificationDetails(
         android: AndroidNotificationDetails(
           _checkInChannelId,
           'Pulse Check-in',
-          channelDescription: "Pulse's daily check-in on how your day is going.",
+          channelDescription: "Pulse's per-task check-ins.",
           importance: Importance.high,
           priority: Priority.high,
+          sound: _checkInSound,
+          playSound: true,
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-      payload: 'checkin',
+      payload: 'taskcheckin:$taskId',
     );
   }
 
-  Future<void> cancelCheckIn() => _plugin.cancel(checkInNotificationId);
+  Future<void> cancelTaskCheckIn(String taskId) =>
+      _plugin.cancel(_taskNotificationId(taskId));
 
   Future<void> scheduleDailyReflection(TimeOfDay time) async {
     await _plugin.zonedSchedule(
@@ -129,6 +158,8 @@ class NotificationService {
           channelDescription: "Pulse's end-of-day reflection.",
           importance: Importance.high,
           priority: Priority.high,
+          sound: _checkInSound,
+          playSound: true,
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,

@@ -36,6 +36,14 @@ class Tasks extends Table {
   IntColumn get actualDuration => integer().nullable()();
   // morning_plan | user_added | pulse_checkin | ai_suggested
   TextColumn get source => text().withDefault(const Constant('user_added'))();
+  // The specific moment the user expects to finish (not a duration) —
+  // drives per-task check-in scheduling. Null means no check-in.
+  DateTimeColumn get expectedCompletionTime => dateTime().nullable()();
+  // The task's current explanation for not being done yet — a live,
+  // resolvable state (not a log), set by the check-in screen's "Explain"
+  // action. Cleared when transferred to a new day (fresh start); left in
+  // place when the task is ended, so it carries through to the report.
+  TextColumn get explanationNote => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -45,10 +53,21 @@ class CheckIns extends Table {
   TextColumn get id => text()();
   TextColumn get dailyPlanId =>
       text().references(DailyPlans, #id, onDelete: KeyAction.cascade)();
+  // Every check-in is tied to one task (see docs/ARCHITECTURE.md —
+  // check-ins are per-task, not one fixed daily prompt).
+  TextColumn get taskId =>
+      text().nullable().references(Tasks, #id, onDelete: KeyAction.cascade)();
   DateTimeColumn get scheduledFor => dateTime()();
   DateTimeColumn get respondedAt => dateTime().nullable()();
-  // pending | responded | skipped
+  // pending | responded | skipped — skipped means superseded by an edit
+  // before it ever fired (not a miss, doesn't count against Insights'
+  // consistency metric either way).
   TextColumn get status => text().withDefault(const Constant('pending'))();
+  // Unused as of the explanationNote redesign (see Tasks.explanationNote)
+  // — left in the schema rather than a dropColumn migration for zero
+  // benefit. Task-level explanations are a live, resolvable state, not a
+  // per-check-in log, so they live on Tasks instead.
+  TextColumn get note => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -90,7 +109,22 @@ class PulseDatabase extends _$PulseDatabase {
   PulseDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(tasks, tasks.expectedCompletionTime);
+            await m.addColumn(checkIns, checkIns.taskId);
+            await m.addColumn(checkIns, checkIns.note);
+          }
+          if (from < 3) {
+            await m.addColumn(tasks, tasks.explanationNote);
+          }
+        },
+      );
 }
 
 LazyDatabase _openConnection() {

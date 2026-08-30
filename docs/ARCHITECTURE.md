@@ -46,6 +46,7 @@ lib/
     reflection/
     report/
     history/
+    week/
     insights/
     settings/
   app.dart
@@ -67,27 +68,42 @@ don't get tangled, so either can change independently.
 
 ## Navigation
 
-Bottom nav, 4 destinations, matching the original spec:
+Bottom nav, 5 destinations:
 
 ```
-Today | History | Insights | Settings
+Today | Week | History | Insights | Settings
 ```
 
-`Insights` ships as a stub in v1 (see ROADMAP) but stays in the nav shell
-from the start so the IA doesn't shift later.
+Ordered present → near future → past → analysis → config. `Week` shows
+today through the next 6 days — tasks planned for a future day are
+otherwise invisible until that day's Today screen. `Insights` ships as a
+stub in v1 (see ROADMAP) but stays in the nav shell from the start so the
+IA doesn't shift later.
 
 ## Notifications / check-in scheduling
 
-v1 ships exactly **one** scheduled local notification per day (the
-check-in), using `flutter_local_notifications` + `workmanager`. Android
-12+ restricts exact alarms, so:
-- Request `SCHEDULE_EXACT_ALARM` for the check-in and daily report time.
+Check-ins are **per-task**, not one fixed daily prompt: a task with an
+expected completion time gets its own one-time
+`flutter_local_notifications` alarm 5 minutes before that time
+(`NotificationService.scheduleTaskCheckIn`), cancelled/rescheduled
+whenever the task is edited, completed, deleted, or moved. Android 12+
+restricts exact alarms, so:
+- Request `SCHEDULE_EXACT_ALARM` at onboarding.
 - Treat a few minutes of drift as acceptable — Pulse is not a stopwatch.
 
-Multiple check-ins/day (original spec §9) is deferred until this single
-check-in is proven reliable across Doze/battery-optimization states on a
-real device — that's a scheduling reliability problem worth its own spike,
-not something to assume works.
+The daily reflection notification stays a single fixed daily time (set
+at onboarding), unrelated to task check-ins.
+
+Responding to a check-in is one of: mark done, ask for more time (same
+day), carry to tomorrow (asks what time tomorrow), or explain why it
+isn't done — an explanation is a live, resolvable state on the task
+itself (`tasks.explanationNote`), not a log entry; a task carrying one
+renders as an expandable card (`TaskTile`) on Today/Week with options to
+transfer it to another day or end it. Every check-in is recorded as a
+`check_ins` row at *schedule* time (not tap time), so an ignored
+notification still counts as "due" for Insights' consistency metric —
+except when superseded by an edit before it ever fired, which marks it
+`skipped` instead of leaving it permanently `pending`.
 
 ## AI (attempted, reverted — see docs/API.md and ROADMAP.md Phase 9)
 
@@ -116,10 +132,17 @@ debugging saga (see ROADMAP.md) as a way to test app networking code in
 isolation from that specific phone's environment. Notes for reuse:
 
 - Boot headless (`-no-window`) — the windowed mode's Qt renderer doesn't
-  work in this non-interactive environment and silently breaks touch
-  input, which is a nasty failure mode (screenshots still work, so it
-  looks fine until you notice taps do nothing).
+  work in this non-interactive environment at all (breaks touch input
+  outright, "System UI isn't responding" ANRs).
 - `adb shell input tap`/`swipe` requires real screen-pixel coordinates,
   not the coordinates of a resized screenshot — scale both X *and* Y by
   the same factor (a bug here silently taps the wrong element rather than
   erroring).
+- Even headless, `adb`-driven tap/swipe injection has proven unreliable
+  in this environment across an entire session of attempts (window focus
+  and app state both check out fine via `dumpsys`, taps still don't
+  register) — cause never fully isolated, not worth more time chasing.
+  Don't rely on it for UI walkthroughs; use the emulator only for
+  non-touch verification (`dumpsys alarm`, DB pulls, a Dart
+  `integration_test` calling app code directly) and do actual UI
+  walkthroughs on the real device.

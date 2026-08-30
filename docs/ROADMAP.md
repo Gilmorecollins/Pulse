@@ -8,7 +8,7 @@ handles errors, and is navigable).
 ## Phase 1 — Foundation ✅
 - Project scaffold, Material 3 theme, GoRouter shell with 4 nav
   destinations (Today / History / Insights / Settings — Insights, History
-  and Settings are stubs for now)
+  and Settings are stubs for now; a 5th, Week, was added in Phase 10)
 - Drift database + v1 tables (see DATABASE.md)
 - Repository layer for tasks & daily plans
 
@@ -136,13 +136,63 @@ A reusable Android 16 emulator (`Pulse_Test_A16`) came out of this
 investigation and stays available locally for fast iteration without
 wireless-ADB flakiness — see the "Emulator" note in ARCHITECTURE.md.
 
-## Phase 10 — Multiple Check-ins
-- Configurable check-in frequency/quiet hours
-- Revisit Android scheduling reliability at this point specifically —
-  this is harder than Phase 4's single check-in and deserves its own
-  testing pass on a real device under battery optimization.
+## Phase 10 — Per-task Check-ins ⏳ (implemented, on-device verification in progress)
 
-## Phase 11 — WhatsApp Delivery
-- Official WhatsApp Business API integration behind the
-  `NotificationChannel` abstraction
-- Only after report generation (Phase 6) has been used daily for a while
+Redesigned from the original "configurable frequency/quiet hours"
+placeholder into something more useful, driven by real usage/feedback:
+check-ins are per-task, not one fixed daily prompt.
+
+- Onboarding's single daily check-in time is replaced with a short
+  explainer step — there's no one time to configure anymore, it's set
+  per task.
+- Add Task gains an optional target day (today by default, up to +30
+  days) and an optional expected-finish time; setting a time schedules a
+  one-time check-in 5 minutes before it.
+- The check-in screen is task-specific (`/checkin/:taskId`, not a
+  generic list) with four responses: mark done, ask for more time (same
+  day), carry to tomorrow (now asks what time tomorrow), or explain
+  what's going on.
+- An explanation is a **live, resolvable task state**
+  (`tasks.explanationNote`), not a log entry — a task carrying one
+  renders as an expandable card on Today/Week (`TaskTile`) with options
+  to transfer it to another day or end it (status → `cancelled`,
+  explanation preserved so it shows on that day's report).
+- Any task is now editable in place (title/day/time) by tapping it —
+  `AddEditTaskSheet`, shared between Today and Week. Moving a task to a
+  different day is just editing its day (`updateTaskDetails`/
+  `moveTaskToDay`); no separate "move" action.
+- New **Week** tab (5th nav destination, today through +6 days) — tasks
+  planned for a future day were previously invisible until that day's
+  Today screen; Week makes them visible and fully manageable (view, add,
+  edit, resolve an explanation) ahead of time.
+- Editing/rescheduling a task before its check-in ever fires marks that
+  `check_ins` row `skipped` rather than leaving it permanently `pending`
+  — Insights' consistency metric excludes `skipped` from both sides of
+  the ratio, since a proactive reschedule isn't a missed check-in.
+- Scheduling reliability under Doze/battery-optimization (the original
+  Phase 10 goal) hasn't had a dedicated real-world stress test yet —
+  each individual alarm uses the same `exactAllowWhileIdle` scheduling
+  already verified working in Phases 4-5, but a task-level alarm can sit
+  scheduled for hours/days rather than firing same-day, which is untested
+  territory. Worth a dedicated pass once this is in regular use.
+- **Not yet marked done** — implemented, `flutter analyze`/`flutter test`
+  clean (17 tests), but needs the on-device walkthrough (edit, carry
+  forward with a time, explain → transfer/end, Week tab, report/WhatsApp
+  showing an explanation) before this gets a ✅, per the project's
+  Definition of Done.
+
+## Phase 11 — WhatsApp Delivery ⏳ (tap-to-send shipped; full Business API still deferred)
+
+Built as part of Phase 10's work, in trimmed form: a "Send to WhatsApp"
+button on the Report screen opens WhatsApp (via the phone-number-less
+`wa.me` deep link) with a pre-filled, formatted summary of that day —
+productivity, completed/not-completed tasks (with any explanation
+attached), new activities, and the reflection — the user picks who to
+send it to and taps send.
+
+Deliberately **not** the original full WhatsApp Business Platform API —
+see docs/API.md: that needs a Meta Business account, a dedicated
+business phone number, and Meta-approved message templates, real
+setup/verification cost for what is here one person messaging
+themselves. Revisit the full API only if this is ever used by more than
+one person, or automatic (no-tap) delivery becomes a real requirement.

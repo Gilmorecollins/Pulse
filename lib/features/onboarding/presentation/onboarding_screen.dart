@@ -17,7 +17,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _nameController = TextEditingController();
 
   int _step = 0;
-  TimeOfDay _checkInTime = const TimeOfDay(hour: 13, minute: 0);
   TimeOfDay _reportTime = const TimeOfDay(hour: 20, minute: 0);
   bool _saving = false;
 
@@ -45,14 +44,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           name: _nameController.text.trim().isEmpty
               ? 'there'
               : _nameController.text.trim(),
-          checkInTime: _checkInTime,
           reportTime: _reportTime,
         );
     ref.invalidate(userNameProvider);
 
     final notifications = ref.read(notificationServiceProvider);
     await notifications.requestPermissions();
-    await notifications.scheduleDailyCheckIn(_checkInTime);
     await notifications.scheduleDailyReflection(_reportTime);
 
     if (mounted) context.go('/today');
@@ -75,12 +72,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     onNext: () => _goToStep(2),
                     onBack: () => _goToStep(0),
                   ),
-                  _TimeStep(
-                    title: 'When should Pulse check in with you?',
-                    subtitle: 'Once a day, Pulse will ask how things are '
-                        'going.',
-                    time: _checkInTime,
-                    onTimeChanged: (t) => setState(() => _checkInTime = t),
+                  _CheckInExplainerStep(
                     onNext: () => _goToStep(3),
                     onBack: () => _goToStep(1),
                   ),
@@ -213,6 +205,56 @@ class _NameStep extends StatelessWidget {
               border: OutlineInputBorder(),
             ),
             onSubmitted: (_) => onNext(),
+          ),
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(onPressed: onNext, child: const Text('Next')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Explains the per-task check-in model before the user ever adds a
+/// task — replaces what used to be a single daily check-in time picker
+/// (see docs/ARCHITECTURE.md).
+class _CheckInExplainerStep extends StatelessWidget {
+  const _CheckInExplainerStep({required this.onNext, required this.onBack});
+
+  final VoidCallback onNext;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconButton(
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back),
+            padding: EdgeInsets.zero,
+            alignment: Alignment.centerLeft,
+          ),
+          const SizedBox(height: 16),
+          Icon(Icons.bolt_outlined, size: 40, color: theme.colorScheme.primary),
+          const SizedBox(height: 16),
+          Text(
+            'Pulse checks in per task',
+            style: theme.textTheme.headlineMedium,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Not once a day — when you add a task, you\'ll say when you '
+            'expect to finish it, and Pulse checks in 5 minutes before '
+            'that time to see how it\'s going.',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const Spacer(),
           SizedBox(

@@ -394,6 +394,28 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     requiredDuringInsert: false,
     defaultValue: const Constant('user_added'),
   );
+  static const VerificationMeta _expectedCompletionTimeMeta =
+      const VerificationMeta('expectedCompletionTime');
+  @override
+  late final GeneratedColumn<DateTime> expectedCompletionTime =
+      GeneratedColumn<DateTime>(
+        'expected_completion_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _explanationNoteMeta = const VerificationMeta(
+    'explanationNote',
+  );
+  @override
+  late final GeneratedColumn<String> explanationNote = GeneratedColumn<String>(
+    'explanation_note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -408,6 +430,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     estimatedDuration,
     actualDuration,
     source,
+    expectedCompletionTime,
+    explanationNote,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -515,6 +539,24 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
       );
     }
+    if (data.containsKey('expected_completion_time')) {
+      context.handle(
+        _expectedCompletionTimeMeta,
+        expectedCompletionTime.isAcceptableOrUnknown(
+          data['expected_completion_time']!,
+          _expectedCompletionTimeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('explanation_note')) {
+      context.handle(
+        _explanationNoteMeta,
+        explanationNote.isAcceptableOrUnknown(
+          data['explanation_note']!,
+          _explanationNoteMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -572,6 +614,14 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         DriftSqlType.string,
         data['${effectivePrefix}source'],
       )!,
+      expectedCompletionTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}expected_completion_time'],
+      ),
+      explanationNote: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}explanation_note'],
+      ),
     );
   }
 
@@ -594,6 +644,8 @@ class Task extends DataClass implements Insertable<Task> {
   final int? estimatedDuration;
   final int? actualDuration;
   final String source;
+  final DateTime? expectedCompletionTime;
+  final String? explanationNote;
   const Task({
     required this.id,
     required this.dailyPlanId,
@@ -607,6 +659,8 @@ class Task extends DataClass implements Insertable<Task> {
     this.estimatedDuration,
     this.actualDuration,
     required this.source,
+    this.expectedCompletionTime,
+    this.explanationNote,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -631,6 +685,14 @@ class Task extends DataClass implements Insertable<Task> {
       map['actual_duration'] = Variable<int>(actualDuration);
     }
     map['source'] = Variable<String>(source);
+    if (!nullToAbsent || expectedCompletionTime != null) {
+      map['expected_completion_time'] = Variable<DateTime>(
+        expectedCompletionTime,
+      );
+    }
+    if (!nullToAbsent || explanationNote != null) {
+      map['explanation_note'] = Variable<String>(explanationNote);
+    }
     return map;
   }
 
@@ -656,6 +718,12 @@ class Task extends DataClass implements Insertable<Task> {
           ? const Value.absent()
           : Value(actualDuration),
       source: Value(source),
+      expectedCompletionTime: expectedCompletionTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expectedCompletionTime),
+      explanationNote: explanationNote == null && nullToAbsent
+          ? const Value.absent()
+          : Value(explanationNote),
     );
   }
 
@@ -677,6 +745,10 @@ class Task extends DataClass implements Insertable<Task> {
       estimatedDuration: serializer.fromJson<int?>(json['estimatedDuration']),
       actualDuration: serializer.fromJson<int?>(json['actualDuration']),
       source: serializer.fromJson<String>(json['source']),
+      expectedCompletionTime: serializer.fromJson<DateTime?>(
+        json['expectedCompletionTime'],
+      ),
+      explanationNote: serializer.fromJson<String?>(json['explanationNote']),
     );
   }
   @override
@@ -695,6 +767,10 @@ class Task extends DataClass implements Insertable<Task> {
       'estimatedDuration': serializer.toJson<int?>(estimatedDuration),
       'actualDuration': serializer.toJson<int?>(actualDuration),
       'source': serializer.toJson<String>(source),
+      'expectedCompletionTime': serializer.toJson<DateTime?>(
+        expectedCompletionTime,
+      ),
+      'explanationNote': serializer.toJson<String?>(explanationNote),
     };
   }
 
@@ -711,6 +787,8 @@ class Task extends DataClass implements Insertable<Task> {
     Value<int?> estimatedDuration = const Value.absent(),
     Value<int?> actualDuration = const Value.absent(),
     String? source,
+    Value<DateTime?> expectedCompletionTime = const Value.absent(),
+    Value<String?> explanationNote = const Value.absent(),
   }) => Task(
     id: id ?? this.id,
     dailyPlanId: dailyPlanId ?? this.dailyPlanId,
@@ -728,6 +806,12 @@ class Task extends DataClass implements Insertable<Task> {
         ? actualDuration.value
         : this.actualDuration,
     source: source ?? this.source,
+    expectedCompletionTime: expectedCompletionTime.present
+        ? expectedCompletionTime.value
+        : this.expectedCompletionTime,
+    explanationNote: explanationNote.present
+        ? explanationNote.value
+        : this.explanationNote,
   );
   Task copyWithCompanion(TasksCompanion data) {
     return Task(
@@ -755,6 +839,12 @@ class Task extends DataClass implements Insertable<Task> {
           ? data.actualDuration.value
           : this.actualDuration,
       source: data.source.present ? data.source.value : this.source,
+      expectedCompletionTime: data.expectedCompletionTime.present
+          ? data.expectedCompletionTime.value
+          : this.expectedCompletionTime,
+      explanationNote: data.explanationNote.present
+          ? data.explanationNote.value
+          : this.explanationNote,
     );
   }
 
@@ -772,7 +862,9 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('plannedFor: $plannedFor, ')
           ..write('estimatedDuration: $estimatedDuration, ')
           ..write('actualDuration: $actualDuration, ')
-          ..write('source: $source')
+          ..write('source: $source, ')
+          ..write('expectedCompletionTime: $expectedCompletionTime, ')
+          ..write('explanationNote: $explanationNote')
           ..write(')'))
         .toString();
   }
@@ -791,6 +883,8 @@ class Task extends DataClass implements Insertable<Task> {
     estimatedDuration,
     actualDuration,
     source,
+    expectedCompletionTime,
+    explanationNote,
   );
   @override
   bool operator ==(Object other) =>
@@ -807,7 +901,9 @@ class Task extends DataClass implements Insertable<Task> {
           other.plannedFor == this.plannedFor &&
           other.estimatedDuration == this.estimatedDuration &&
           other.actualDuration == this.actualDuration &&
-          other.source == this.source);
+          other.source == this.source &&
+          other.expectedCompletionTime == this.expectedCompletionTime &&
+          other.explanationNote == this.explanationNote);
 }
 
 class TasksCompanion extends UpdateCompanion<Task> {
@@ -823,6 +919,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<int?> estimatedDuration;
   final Value<int?> actualDuration;
   final Value<String> source;
+  final Value<DateTime?> expectedCompletionTime;
+  final Value<String?> explanationNote;
   final Value<int> rowid;
   const TasksCompanion({
     this.id = const Value.absent(),
@@ -837,6 +935,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.estimatedDuration = const Value.absent(),
     this.actualDuration = const Value.absent(),
     this.source = const Value.absent(),
+    this.expectedCompletionTime = const Value.absent(),
+    this.explanationNote = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TasksCompanion.insert({
@@ -852,6 +952,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.estimatedDuration = const Value.absent(),
     this.actualDuration = const Value.absent(),
     this.source = const Value.absent(),
+    this.expectedCompletionTime = const Value.absent(),
+    this.explanationNote = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        dailyPlanId = Value(dailyPlanId),
@@ -871,6 +973,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Expression<int>? estimatedDuration,
     Expression<int>? actualDuration,
     Expression<String>? source,
+    Expression<DateTime>? expectedCompletionTime,
+    Expression<String>? explanationNote,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -886,6 +990,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
       if (estimatedDuration != null) 'estimated_duration': estimatedDuration,
       if (actualDuration != null) 'actual_duration': actualDuration,
       if (source != null) 'source': source,
+      if (expectedCompletionTime != null)
+        'expected_completion_time': expectedCompletionTime,
+      if (explanationNote != null) 'explanation_note': explanationNote,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -903,6 +1010,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Value<int?>? estimatedDuration,
     Value<int?>? actualDuration,
     Value<String>? source,
+    Value<DateTime?>? expectedCompletionTime,
+    Value<String?>? explanationNote,
     Value<int>? rowid,
   }) {
     return TasksCompanion(
@@ -918,6 +1027,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
       estimatedDuration: estimatedDuration ?? this.estimatedDuration,
       actualDuration: actualDuration ?? this.actualDuration,
       source: source ?? this.source,
+      expectedCompletionTime:
+          expectedCompletionTime ?? this.expectedCompletionTime,
+      explanationNote: explanationNote ?? this.explanationNote,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -961,6 +1073,14 @@ class TasksCompanion extends UpdateCompanion<Task> {
     if (source.present) {
       map['source'] = Variable<String>(source.value);
     }
+    if (expectedCompletionTime.present) {
+      map['expected_completion_time'] = Variable<DateTime>(
+        expectedCompletionTime.value,
+      );
+    }
+    if (explanationNote.present) {
+      map['explanation_note'] = Variable<String>(explanationNote.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -982,6 +1102,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
           ..write('estimatedDuration: $estimatedDuration, ')
           ..write('actualDuration: $actualDuration, ')
           ..write('source: $source, ')
+          ..write('expectedCompletionTime: $expectedCompletionTime, ')
+          ..write('explanationNote: $explanationNote, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1012,6 +1134,15 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  @override
+  late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
+    'task_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _scheduledForMeta = const VerificationMeta(
     'scheduledFor',
@@ -1045,13 +1176,24 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     requiredDuringInsert: false,
     defaultValue: const Constant('pending'),
   );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     dailyPlanId,
+    taskId,
     scheduledFor,
     respondedAt,
     status,
+    note,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1081,6 +1223,12 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
     } else if (isInserting) {
       context.missing(_dailyPlanIdMeta);
     }
+    if (data.containsKey('task_id')) {
+      context.handle(
+        _taskIdMeta,
+        taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta),
+      );
+    }
     if (data.containsKey('scheduled_for')) {
       context.handle(
         _scheduledForMeta,
@@ -1107,6 +1255,12 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
       );
     }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
     return context;
   }
 
@@ -1124,6 +1278,10 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
         DriftSqlType.string,
         data['${effectivePrefix}daily_plan_id'],
       )!,
+      taskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task_id'],
+      ),
       scheduledFor: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}scheduled_for'],
@@ -1136,6 +1294,10 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
     );
   }
 
@@ -1148,26 +1310,36 @@ class $CheckInsTable extends CheckIns with TableInfo<$CheckInsTable, CheckIn> {
 class CheckIn extends DataClass implements Insertable<CheckIn> {
   final String id;
   final String dailyPlanId;
+  final String? taskId;
   final DateTime scheduledFor;
   final DateTime? respondedAt;
   final String status;
+  final String? note;
   const CheckIn({
     required this.id,
     required this.dailyPlanId,
+    this.taskId,
     required this.scheduledFor,
     this.respondedAt,
     required this.status,
+    this.note,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['daily_plan_id'] = Variable<String>(dailyPlanId);
+    if (!nullToAbsent || taskId != null) {
+      map['task_id'] = Variable<String>(taskId);
+    }
     map['scheduled_for'] = Variable<DateTime>(scheduledFor);
     if (!nullToAbsent || respondedAt != null) {
       map['responded_at'] = Variable<DateTime>(respondedAt);
     }
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
     return map;
   }
 
@@ -1175,11 +1347,15 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     return CheckInsCompanion(
       id: Value(id),
       dailyPlanId: Value(dailyPlanId),
+      taskId: taskId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskId),
       scheduledFor: Value(scheduledFor),
       respondedAt: respondedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(respondedAt),
       status: Value(status),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
     );
   }
 
@@ -1191,9 +1367,11 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     return CheckIn(
       id: serializer.fromJson<String>(json['id']),
       dailyPlanId: serializer.fromJson<String>(json['dailyPlanId']),
+      taskId: serializer.fromJson<String?>(json['taskId']),
       scheduledFor: serializer.fromJson<DateTime>(json['scheduledFor']),
       respondedAt: serializer.fromJson<DateTime?>(json['respondedAt']),
       status: serializer.fromJson<String>(json['status']),
+      note: serializer.fromJson<String?>(json['note']),
     );
   }
   @override
@@ -1202,24 +1380,30 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'dailyPlanId': serializer.toJson<String>(dailyPlanId),
+      'taskId': serializer.toJson<String?>(taskId),
       'scheduledFor': serializer.toJson<DateTime>(scheduledFor),
       'respondedAt': serializer.toJson<DateTime?>(respondedAt),
       'status': serializer.toJson<String>(status),
+      'note': serializer.toJson<String?>(note),
     };
   }
 
   CheckIn copyWith({
     String? id,
     String? dailyPlanId,
+    Value<String?> taskId = const Value.absent(),
     DateTime? scheduledFor,
     Value<DateTime?> respondedAt = const Value.absent(),
     String? status,
+    Value<String?> note = const Value.absent(),
   }) => CheckIn(
     id: id ?? this.id,
     dailyPlanId: dailyPlanId ?? this.dailyPlanId,
+    taskId: taskId.present ? taskId.value : this.taskId,
     scheduledFor: scheduledFor ?? this.scheduledFor,
     respondedAt: respondedAt.present ? respondedAt.value : this.respondedAt,
     status: status ?? this.status,
+    note: note.present ? note.value : this.note,
   );
   CheckIn copyWithCompanion(CheckInsCompanion data) {
     return CheckIn(
@@ -1227,6 +1411,7 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
       dailyPlanId: data.dailyPlanId.present
           ? data.dailyPlanId.value
           : this.dailyPlanId,
+      taskId: data.taskId.present ? data.taskId.value : this.taskId,
       scheduledFor: data.scheduledFor.present
           ? data.scheduledFor.value
           : this.scheduledFor,
@@ -1234,6 +1419,7 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
           ? data.respondedAt.value
           : this.respondedAt,
       status: data.status.present ? data.status.value : this.status,
+      note: data.note.present ? data.note.value : this.note,
     );
   }
 
@@ -1242,48 +1428,65 @@ class CheckIn extends DataClass implements Insertable<CheckIn> {
     return (StringBuffer('CheckIn(')
           ..write('id: $id, ')
           ..write('dailyPlanId: $dailyPlanId, ')
+          ..write('taskId: $taskId, ')
           ..write('scheduledFor: $scheduledFor, ')
           ..write('respondedAt: $respondedAt, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('note: $note')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, dailyPlanId, scheduledFor, respondedAt, status);
+  int get hashCode => Object.hash(
+    id,
+    dailyPlanId,
+    taskId,
+    scheduledFor,
+    respondedAt,
+    status,
+    note,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CheckIn &&
           other.id == this.id &&
           other.dailyPlanId == this.dailyPlanId &&
+          other.taskId == this.taskId &&
           other.scheduledFor == this.scheduledFor &&
           other.respondedAt == this.respondedAt &&
-          other.status == this.status);
+          other.status == this.status &&
+          other.note == this.note);
 }
 
 class CheckInsCompanion extends UpdateCompanion<CheckIn> {
   final Value<String> id;
   final Value<String> dailyPlanId;
+  final Value<String?> taskId;
   final Value<DateTime> scheduledFor;
   final Value<DateTime?> respondedAt;
   final Value<String> status;
+  final Value<String?> note;
   final Value<int> rowid;
   const CheckInsCompanion({
     this.id = const Value.absent(),
     this.dailyPlanId = const Value.absent(),
+    this.taskId = const Value.absent(),
     this.scheduledFor = const Value.absent(),
     this.respondedAt = const Value.absent(),
     this.status = const Value.absent(),
+    this.note = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CheckInsCompanion.insert({
     required String id,
     required String dailyPlanId,
+    this.taskId = const Value.absent(),
     required DateTime scheduledFor,
     this.respondedAt = const Value.absent(),
     this.status = const Value.absent(),
+    this.note = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        dailyPlanId = Value(dailyPlanId),
@@ -1291,17 +1494,21 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
   static Insertable<CheckIn> custom({
     Expression<String>? id,
     Expression<String>? dailyPlanId,
+    Expression<String>? taskId,
     Expression<DateTime>? scheduledFor,
     Expression<DateTime>? respondedAt,
     Expression<String>? status,
+    Expression<String>? note,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (dailyPlanId != null) 'daily_plan_id': dailyPlanId,
+      if (taskId != null) 'task_id': taskId,
       if (scheduledFor != null) 'scheduled_for': scheduledFor,
       if (respondedAt != null) 'responded_at': respondedAt,
       if (status != null) 'status': status,
+      if (note != null) 'note': note,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1309,17 +1516,21 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
   CheckInsCompanion copyWith({
     Value<String>? id,
     Value<String>? dailyPlanId,
+    Value<String?>? taskId,
     Value<DateTime>? scheduledFor,
     Value<DateTime?>? respondedAt,
     Value<String>? status,
+    Value<String?>? note,
     Value<int>? rowid,
   }) {
     return CheckInsCompanion(
       id: id ?? this.id,
       dailyPlanId: dailyPlanId ?? this.dailyPlanId,
+      taskId: taskId ?? this.taskId,
       scheduledFor: scheduledFor ?? this.scheduledFor,
       respondedAt: respondedAt ?? this.respondedAt,
       status: status ?? this.status,
+      note: note ?? this.note,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1333,6 +1544,9 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     if (dailyPlanId.present) {
       map['daily_plan_id'] = Variable<String>(dailyPlanId.value);
     }
+    if (taskId.present) {
+      map['task_id'] = Variable<String>(taskId.value);
+    }
     if (scheduledFor.present) {
       map['scheduled_for'] = Variable<DateTime>(scheduledFor.value);
     }
@@ -1341,6 +1555,9 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -1353,9 +1570,11 @@ class CheckInsCompanion extends UpdateCompanion<CheckIn> {
     return (StringBuffer('CheckInsCompanion(')
           ..write('id: $id, ')
           ..write('dailyPlanId: $dailyPlanId, ')
+          ..write('taskId: $taskId, ')
           ..write('scheduledFor: $scheduledFor, ')
           ..write('respondedAt: $respondedAt, ')
           ..write('status: $status, ')
+          ..write('note: $note, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2312,6 +2531,8 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<int?> estimatedDuration,
       Value<int?> actualDuration,
       Value<String> source,
+      Value<DateTime?> expectedCompletionTime,
+      Value<String?> explanationNote,
       Value<int> rowid,
     });
 typedef $$TasksTableUpdateCompanionBuilder =
@@ -2328,6 +2549,8 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<int?> estimatedDuration,
       Value<int?> actualDuration,
       Value<String> source,
+      Value<DateTime?> expectedCompletionTime,
+      Value<String?> explanationNote,
       Value<int> rowid,
     });
 
@@ -2397,6 +2620,16 @@ class $$TasksTableFilterComposer
 
   ColumnFilters<String> get source => $composableBuilder(
     column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get expectedCompletionTime => $composableBuilder(
+    column: $table.expectedCompletionTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get explanationNote => $composableBuilder(
+    column: $table.explanationNote,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2469,6 +2702,16 @@ class $$TasksTableOrderingComposer
     column: $table.source,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get expectedCompletionTime => $composableBuilder(
+    column: $table.expectedCompletionTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get explanationNote => $composableBuilder(
+    column: $table.explanationNote,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TasksTableAnnotationComposer
@@ -2527,6 +2770,16 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<String> get source =>
       $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get expectedCompletionTime => $composableBuilder(
+    column: $table.expectedCompletionTime,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get explanationNote => $composableBuilder(
+    column: $table.explanationNote,
+    builder: (column) => column,
+  );
 }
 
 class $$TasksTableTableManager
@@ -2569,6 +2822,8 @@ class $$TasksTableTableManager
                 Value<int?> estimatedDuration = const Value.absent(),
                 Value<int?> actualDuration = const Value.absent(),
                 Value<String> source = const Value.absent(),
+                Value<DateTime?> expectedCompletionTime = const Value.absent(),
+                Value<String?> explanationNote = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TasksCompanion(
                 id: id,
@@ -2583,6 +2838,8 @@ class $$TasksTableTableManager
                 estimatedDuration: estimatedDuration,
                 actualDuration: actualDuration,
                 source: source,
+                expectedCompletionTime: expectedCompletionTime,
+                explanationNote: explanationNote,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2599,6 +2856,8 @@ class $$TasksTableTableManager
                 Value<int?> estimatedDuration = const Value.absent(),
                 Value<int?> actualDuration = const Value.absent(),
                 Value<String> source = const Value.absent(),
+                Value<DateTime?> expectedCompletionTime = const Value.absent(),
+                Value<String?> explanationNote = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TasksCompanion.insert(
                 id: id,
@@ -2613,6 +2872,8 @@ class $$TasksTableTableManager
                 estimatedDuration: estimatedDuration,
                 actualDuration: actualDuration,
                 source: source,
+                expectedCompletionTime: expectedCompletionTime,
+                explanationNote: explanationNote,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2641,18 +2902,22 @@ typedef $$CheckInsTableCreateCompanionBuilder =
     CheckInsCompanion Function({
       required String id,
       required String dailyPlanId,
+      Value<String?> taskId,
       required DateTime scheduledFor,
       Value<DateTime?> respondedAt,
       Value<String> status,
+      Value<String?> note,
       Value<int> rowid,
     });
 typedef $$CheckInsTableUpdateCompanionBuilder =
     CheckInsCompanion Function({
       Value<String> id,
       Value<String> dailyPlanId,
+      Value<String?> taskId,
       Value<DateTime> scheduledFor,
       Value<DateTime?> respondedAt,
       Value<String> status,
+      Value<String?> note,
       Value<int> rowid,
     });
 
@@ -2675,6 +2940,11 @@ class $$CheckInsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get scheduledFor => $composableBuilder(
     column: $table.scheduledFor,
     builder: (column) => ColumnFilters(column),
@@ -2687,6 +2957,11 @@ class $$CheckInsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2710,6 +2985,11 @@ class $$CheckInsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get scheduledFor => $composableBuilder(
     column: $table.scheduledFor,
     builder: (column) => ColumnOrderings(column),
@@ -2722,6 +3002,11 @@ class $$CheckInsTableOrderingComposer
 
   ColumnOrderings<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -2743,6 +3028,9 @@ class $$CheckInsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get taskId =>
+      $composableBuilder(column: $table.taskId, builder: (column) => column);
+
   GeneratedColumn<DateTime> get scheduledFor => $composableBuilder(
     column: $table.scheduledFor,
     builder: (column) => column,
@@ -2755,6 +3043,9 @@ class $$CheckInsTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
 }
 
 class $$CheckInsTableTableManager
@@ -2787,32 +3078,40 @@ class $$CheckInsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> dailyPlanId = const Value.absent(),
+                Value<String?> taskId = const Value.absent(),
                 Value<DateTime> scheduledFor = const Value.absent(),
                 Value<DateTime?> respondedAt = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String?> note = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CheckInsCompanion(
                 id: id,
                 dailyPlanId: dailyPlanId,
+                taskId: taskId,
                 scheduledFor: scheduledFor,
                 respondedAt: respondedAt,
                 status: status,
+                note: note,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String id,
                 required String dailyPlanId,
+                Value<String?> taskId = const Value.absent(),
                 required DateTime scheduledFor,
                 Value<DateTime?> respondedAt = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String?> note = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CheckInsCompanion.insert(
                 id: id,
                 dailyPlanId: dailyPlanId,
+                taskId: taskId,
                 scheduledFor: scheduledFor,
                 respondedAt: respondedAt,
                 status: status,
+                note: note,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

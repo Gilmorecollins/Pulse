@@ -51,7 +51,6 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'onboarding_complete': true,
       'user_name': 'Test User',
-      'check_in_time': '13:00',
       'report_time': '20:00',
     });
 

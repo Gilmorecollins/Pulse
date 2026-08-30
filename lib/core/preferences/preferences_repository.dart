@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class PreferencesRepository {
   static const _keyOnboardingComplete = 'onboarding_complete';
   static const _keyName = 'user_name';
-  static const _keyCheckInTime = 'check_in_time';
   static const _keyReportTime = 'report_time';
 
   Future<bool> isOnboardingComplete() async {
@@ -20,11 +19,6 @@ class PreferencesRepository {
     return prefs.getString(_keyName);
   }
 
-  Future<TimeOfDay?> getCheckInTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    return _parseTime(prefs.getString(_keyCheckInTime));
-  }
-
   Future<TimeOfDay?> getReportTime() async {
     final prefs = await SharedPreferences.getInstance();
     return _parseTime(prefs.getString(_keyReportTime));
@@ -32,12 +26,10 @@ class PreferencesRepository {
 
   Future<void> completeOnboarding({
     required String name,
-    required TimeOfDay checkInTime,
     required TimeOfDay reportTime,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyName, name.trim());
-    await prefs.setString(_keyCheckInTime, _formatTime(checkInTime));
     await prefs.setString(_keyReportTime, _formatTime(reportTime));
     await prefs.setBool(_keyOnboardingComplete, true);
   }

@@ -10,6 +10,7 @@ import '../../features/reflection/presentation/reflection_screen.dart';
 import '../../features/report/presentation/report_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/today/presentation/today_screen.dart';
+import '../../features/week/presentation/week_screen.dart';
 import '../preferences/preferences_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -30,8 +31,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
-        path: '/checkin',
-        builder: (context, state) => const CheckInScreen(),
+        path: '/checkin/:taskId',
+        builder: (context, state) =>
+            TaskCheckInScreen(taskId: state.pathParameters['taskId']!),
       ),
       GoRoute(
         path: '/reflection',
@@ -51,6 +53,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/today',
                 builder: (context, state) => const TodayScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/week',
+                builder: (context, state) => const WeekScreen(),
               ),
             ],
           ),
@@ -104,6 +114,11 @@ class _PulseNavShell extends StatelessWidget {
             icon: Icon(Icons.today_outlined),
             selectedIcon: Icon(Icons.today),
             label: 'Today',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.view_week_outlined),
+            selectedIcon: Icon(Icons.view_week),
+            label: 'Week',
           ),
           NavigationDestination(
             icon: Icon(Icons.history_outlined),

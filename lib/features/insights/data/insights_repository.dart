@@ -43,7 +43,13 @@ class InsightsRepository {
       ),
     ])).get();
 
-    final checkIns = await _db.select(_db.checkIns).get();
+    // 'skipped' (superseded by an edit before it ever fired) counts
+    // neither as a response nor a miss — excluded from both sides of the
+    // ratio rather than dragging consistency down for a proactive
+    // reschedule.
+    final checkIns = await (_db.select(
+      _db.checkIns,
+    )..where((c) => c.status.isNotValue('skipped'))).get();
     final responded = checkIns.where((c) => c.status == 'responded').length;
     final checkInConsistency = checkIns.isEmpty
         ? null

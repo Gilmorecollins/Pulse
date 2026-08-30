@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/models/mood.dart';
 import '../../../core/models/task_enums.dart';
 import 'report_providers.dart';
+import 'report_share.dart';
 
 class ReportScreen extends ConsumerWidget {
   const ReportScreen({super.key, required this.planId});
@@ -132,6 +134,12 @@ class _ReportBody extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => _sendToWhatsApp(context, data),
+          icon: const Icon(Icons.share_outlined, size: 18),
+          label: const Text('Send to WhatsApp'),
+        ),
         if (completed.isNotEmpty) ...[
           const SizedBox(height: 28),
           _SectionHeader(icon: Icons.check_circle_outline, label: 'Completed'),
@@ -145,7 +153,9 @@ class _ReportBody extends StatelessWidget {
             label: 'Not completed',
           ),
           const SizedBox(height: 12),
-          ...notCompleted.map((t) => _TaskLine(title: t.title)),
+          ...notCompleted.map(
+            (t) => _TaskLine(title: t.title, note: t.explanationNote),
+          ),
         ],
         if (activities.isNotEmpty) ...[
           const SizedBox(height: 28),
@@ -190,6 +200,17 @@ class _ReportBody extends StatelessWidget {
       ],
     );
   }
+
+  Future<void> _sendToWhatsApp(BuildContext context, ReportViewData data) async {
+    final text = buildReportShareText(data);
+    final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}');
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't open WhatsApp")),
+      );
+    }
+  }
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -216,15 +237,32 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _TaskLine extends StatelessWidget {
-  const _TaskLine({required this.title});
+  const _TaskLine({required this.title, this.note});
 
   final String title;
+  final String? note;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Text('•  $title', style: Theme.of(context).textTheme.bodyLarge),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('•  $title', style: Theme.of(context).textTheme.bodyLarge),
+          if (note != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, top: 2),
+              child: Text(
+                '"$note"',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

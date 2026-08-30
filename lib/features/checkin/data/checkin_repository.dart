@@ -10,32 +10,58 @@ class CheckInRepository {
 
   final PulseDatabase _db;
 
-  /// A day has at most one open (pending) check-in at a time — reuse it if
-  /// the user opens the check-in screen more than once before responding.
-  Future<CheckIn> getOrCreateTodayCheckIn(String dailyPlanId) async {
-    final existing = await (_db.select(_db.checkIns)
-          ..where(
-            (c) =>
-                c.dailyPlanId.equals(dailyPlanId) & c.status.equals('pending'),
-          ))
-        .getSingleOrNull();
-    if (existing != null) return existing;
-
+  /// Always inserts — each scheduled check-in is its own event, unlike
+  /// the old one-per-day model. Recorded at schedule time (not tap time)
+  /// so an ignored notification still counts as "due" for Insights'
+  /// consistency metric, rather than only ever counting responded ones.
+  Future<CheckIn> createPendingCheckIn({
+    required String taskId,
+    required String dailyPlanId,
+    required DateTime scheduledFor,
+  }) {
     final row = CheckInsCompanion.insert(
       id: _uuid.v4(),
       dailyPlanId: dailyPlanId,
-      scheduledFor: DateTime.now(),
+      taskId: Value(taskId),
+      scheduledFor: scheduledFor,
     );
     return _db.into(_db.checkIns).insertReturning(row);
   }
 
-  Future<void> markResponded(String checkInId) async {
-    await (_db.update(_db.checkIns)..where((c) => c.id.equals(checkInId)))
+  /// Marks the task's most recent pending check-in responded.
+  Future<void> markResponded({required String taskId}) async {
+    final pending = await _latestPending(taskId);
+    if (pending == null) return;
+
+    await (_db.update(_db.checkIns)..where((c) => c.id.equals(pending.id)))
         .write(
       CheckInsCompanion(
         status: const Value('responded'),
         respondedAt: Value(DateTime.now()),
       ),
     );
+  }
+
+  /// Marks the task's most recent pending check-in "skipped" — superseded
+  /// by an edit before it ever fired. Distinct from "responded": neither
+  /// a response nor a miss, so Insights' consistency metric excludes it
+  /// from both the numerator and denominator rather than counting it as
+  /// an ignored check-in.
+  Future<void> skipPendingCheckIn(String taskId) async {
+    final pending = await _latestPending(taskId);
+    if (pending == null) return;
+
+    await (_db.update(_db.checkIns)..where((c) => c.id.equals(pending.id)))
+        .write(const CheckInsCompanion(status: Value('skipped')));
+  }
+
+  Future<CheckIn?> _latestPending(String taskId) {
+    return (_db.select(_db.checkIns)
+          ..where(
+            (c) => c.taskId.equals(taskId) & c.status.equals('pending'),
+          )
+          ..orderBy([(c) => OrderingTerm.desc(c.scheduledFor)])
+          ..limit(1))
+        .getSingleOrNull();
   }
 }

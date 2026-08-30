@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/database/database.dart';
 import '../../../core/models/task_enums.dart';
 import '../../../core/preferences/preferences_provider.dart';
+import 'add_edit_task_sheet.dart';
+import 'task_tile.dart';
 import 'today_providers.dart';
 
 String _greeting() {
@@ -30,16 +33,36 @@ class TodayScreen extends ConsumerWidget {
           data: (tasks) => _TodayContent(tasks: tasks),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddTaskSheet(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Task'),
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: 'logActivity',
+            onPressed: () => _showLogActivitySheet(context),
+            tooltip: 'Did something else come up?',
+            child: const Icon(Icons.bolt_outlined),
+          ),
+          const SizedBox(width: 12),
+          FloatingActionButton.extended(
+            heroTag: 'addTask',
+            onPressed: () => _showAddTaskSheet(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Add Task'),
+          ),
+        ],
       ),
     );
   }
 
-  void _showAddTaskSheet(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
+  void _showAddTaskSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => const AddEditTaskSheet(),
+    );
+  }
+
+  void _showLogActivitySheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -50,55 +73,108 @@ class TodayScreen extends ConsumerWidget {
           top: 20,
           bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'What are you working on?',
-              style: Theme.of(sheetContext).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                hintText: 'e.g. Finish portfolio',
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _submit(sheetContext, ref, controller),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => _submit(sheetContext, ref, controller),
-              child: const Text('Add to today'),
-            ),
-          ],
-        ),
+        child: const _LogActivityCard(),
       ),
     );
   }
+}
 
-  Future<void> _submit(
-    BuildContext sheetContext,
-    WidgetRef ref,
-    TextEditingController controller,
-  ) async {
-    final title = controller.text.trim();
+/// The "I had a meeting with the director" affordance — logging something
+/// that happened outside the morning plan. This is what differentiates
+/// Pulse from a plain to-do list (see docs/PRODUCT.md). Lives on the
+/// Today screen rather than gated behind a check-in notification, since
+/// check-ins are per-task now and there's no single daily moment for it.
+class _LogActivityCard extends ConsumerStatefulWidget {
+  const _LogActivityCard();
+
+  @override
+  ConsumerState<_LogActivityCard> createState() => _LogActivityCardState();
+}
+
+class _LogActivityCardState extends ConsumerState<_LogActivityCard> {
+  final _controller = TextEditingController();
+  bool _adding = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _add() async {
+    final title = _controller.text.trim();
     if (title.isEmpty) return;
+
+    setState(() => _adding = true);
     final plan = await ref.read(todayPlanProvider.future);
     await ref
         .read(todayRepositoryProvider)
-        .addTask(dailyPlanId: plan.id, title: title);
-    if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+        .addActivity(dailyPlanId: plan.id, title: title);
+    _controller.clear();
+    if (mounted) {
+      setState(() => _adding = false);
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Added "$title" to today\'s activities')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Did something else come up?',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'e.g. "Had a meeting with the director"',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                autofocus: true,
+                textInputAction: TextInputAction.done,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  hintText: 'What happened?',
+                  border: OutlineInputBorder(),
+                ),
+                onSubmitted: (_) => _add(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              onPressed: _adding ? null : _add,
+              icon: _adding
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }
 
 class _TodayContent extends ConsumerWidget {
   const _TodayContent({required this.tasks});
 
-  final List<dynamic> tasks;
+  final List<Task> tasks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -116,6 +192,12 @@ class _TodayContent extends ConsumerWidget {
     final total = planned.length;
     final progress = total == 0 ? 0.0 : completed / total;
     final name = ref.watch(userNameProvider).valueOrNull;
+
+    // Active = still needs attention; resolved = completed or ended (see
+    // task_tile.dart's isTaskResolved) — a display grouping only, doesn't
+    // change the honest completion-rate math above.
+    final active = tasks.where((t) => !isTaskResolved(t)).toList();
+    final resolved = tasks.where(isTaskResolved).toList();
 
     return CustomScrollView(
       slivers: [
@@ -144,15 +226,6 @@ class _TodayContent extends ConsumerWidget {
                   completed: completed,
                   total: total,
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  "TODAY'S FOCUS",
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        letterSpacing: 1.2,
-                      ),
-                ),
-                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -162,19 +235,52 @@ class _TodayContent extends ConsumerWidget {
             hasScrollBody: false,
             child: _EmptyState(),
           )
-        else
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-            sliver: SliverList.separated(
-              itemCount: tasks.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final task = tasks[index];
-                return _TaskTile(task: task);
-              },
+        else ...[
+          if (active.isNotEmpty)
+            _TaskSectionSliver(label: 'IN PROGRESS', tasks: active),
+          if (resolved.isNotEmpty)
+            _TaskSectionSliver(label: 'COMPLETED', tasks: resolved),
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+        ],
+      ],
+    );
+  }
+}
+
+class _TaskSectionSliver extends StatelessWidget {
+  const _TaskSectionSliver({required this.label, required this.tasks});
+
+  final String label;
+  final List<Task> tasks;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      letterSpacing: 1.2,
+                    ),
+              ),
             ),
           ),
-      ],
+          SliverList.separated(
+            itemCount: tasks.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final task = tasks[index];
+              return TaskTile(key: ValueKey(task.id), task: task);
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -234,58 +340,6 @@ class _ProgressCard extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TaskTile extends ConsumerWidget {
-  const _TaskTile({required this.task});
-
-  final dynamic task;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final status = TaskStatus.fromDb(task.status);
-    final isCompleted = status == TaskStatus.completed;
-    final source = TaskSource.fromDb(task.source);
-    final isLoggedActivity =
-        source == TaskSource.pulseCheckin || source == TaskSource.aiSuggested;
-
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        leading: Checkbox(
-          value: isCompleted,
-          onChanged: (checked) {
-            ref.read(todayRepositoryProvider).setTaskStatus(
-                  task.id,
-                  checked == true ? TaskStatus.completed : TaskStatus.planned,
-                );
-          },
-        ),
-        title: Text(
-          task.title,
-          style: TextStyle(
-            decoration: isCompleted ? TextDecoration.lineThrough : null,
-            color: isCompleted
-                ? Theme.of(context).colorScheme.onSurfaceVariant
-                : null,
-          ),
-        ),
-        subtitle: isLoggedActivity
-            ? Text(
-                'Logged during check-in',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-              )
-            : null,
-        trailing: IconButton(
-          icon: const Icon(Icons.close, size: 18),
-          onPressed: () =>
-              ref.read(todayRepositoryProvider).deleteTask(task.id),
         ),
       ),
     );
