@@ -6,9 +6,8 @@
 - **Riverpod** for state management
 - **GoRouter** for navigation
 - **Drift** (SQLite) for local persistence — source of truth for v1
-- Backend: none. AI (Phase 9+) calls Gemini directly from the app — see
-  docs/API.md for why that's the right call for a single personal
-  install, and why that could change if Pulse is ever distributed.
+- Backend: none in v1. AI was attempted (see docs/API.md, ROADMAP.md
+  Phase 9) but reverted after failing on the test device specifically.
 
 ## Why local-first
 
@@ -19,10 +18,9 @@ later (see original spec §29 — offline-first was already a stated
 requirement, and local-first as the *default* architecture is the simplest
 way to satisfy it).
 
-When AI features are added, the app will call a small proxy backend
-(stateless, holds only the API key) — it forwards a prompt and returns a
-structured result. It does not store tasks, reports, or reflections. The
-phone stays the database.
+AI is not part of v1 (see docs/API.md, ROADMAP.md Phase 9). Whatever
+form it takes if revisited, it should not store tasks, reports, or
+reflections — the phone stays the database.
 
 ## Layering
 
@@ -91,20 +89,37 @@ check-in is proven reliable across Doze/battery-optimization states on a
 real device — that's a scheduling reliability problem worth its own spike,
 not something to assume works.
 
-## AI (Phase 9+)
+## AI (attempted, reverted — see docs/API.md and ROADMAP.md Phase 9)
 
-Gemini (free tier, `gemini-flash-latest`) called directly from the app —
-see docs/API.md. Flow always follows the original spec's rule (§18):
+If revisited, the flow should still follow the original spec's rule
+(§18):
 
 ```
 User input → AI interpretation → structured response → validation →
 user confirmation where necessary → database
 ```
 
-AI never writes to the local database directly.
+AI should never write to the local database directly.
 
 ## Error handling
 
 Every async operation (even local DB calls) surfaces four states in the
 UI layer: loading, success, empty, error — with a retry action on error.
 No infinite spinners.
+
+## Emulator (local dev tooling)
+
+An Android 16 AVD (`Pulse_Test_A16`, Pixel 10 hardware profile, matching
+the primary test phone's OS version) is set up locally for fast
+iteration without wireless-ADB flakiness. It came out of the Phase 9 AI
+debugging saga (see ROADMAP.md) as a way to test app networking code in
+isolation from that specific phone's environment. Notes for reuse:
+
+- Boot headless (`-no-window`) — the windowed mode's Qt renderer doesn't
+  work in this non-interactive environment and silently breaks touch
+  input, which is a nasty failure mode (screenshots still work, so it
+  looks fine until you notice taps do nothing).
+- `adb shell input tap`/`swipe` requires real screen-pixel coordinates,
+  not the coordinates of a resized screenshot — scale both X *and* Y by
+  the same factor (a bug here silently taps the wrong element rather than
+  erroring).

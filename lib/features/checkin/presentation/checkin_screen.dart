@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/ai/ai_providers.dart';
 import '../../../core/database/database.dart';
 import '../../../core/models/task_enums.dart';
 import '../../today/presentation/today_providers.dart';
@@ -199,32 +198,10 @@ class _LogActivityCardState extends ConsumerState<_LogActivityCard> {
   }
 
   Future<void> _add() async {
-    final rawTitle = _controller.text.trim();
-    if (rawTitle.isEmpty) return;
+    final title = _controller.text.trim();
+    if (title.isEmpty) return;
 
     setState(() => _adding = true);
-
-    var title = rawTitle;
-    final hasAiKey = await ref.read(hasAiKeyProvider.future);
-    if (hasAiKey) {
-      try {
-        title = await ref
-            .read(geminiServiceProvider)
-            .interpretActivity(rawTitle);
-      } catch (_) {
-        title = rawTitle;
-      }
-      if (mounted) {
-        final confirmed = await _confirmActivity(title);
-        if (confirmed == null) {
-          setState(() => _adding = false);
-          return;
-        }
-        title = confirmed;
-      }
-    }
-
-    if (!mounted) return;
     final plan = await ref.read(todayPlanProvider.future);
     await ref
         .read(todayRepositoryProvider)
@@ -236,33 +213,6 @@ class _LogActivityCardState extends ConsumerState<_LogActivityCard> {
         SnackBar(content: Text('Added "$title" to today\'s activities')),
       );
     }
-  }
-
-  Future<String?> _confirmActivity(String suggestedTitle) {
-    final editController = TextEditingController(text: suggestedTitle);
-    return showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Log this activity?'),
-        content: TextField(
-          controller: editController,
-          autofocus: true,
-          maxLines: 2,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.of(dialogContext).pop(editController.text.trim()),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

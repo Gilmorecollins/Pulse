@@ -3,8 +3,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <!-- Calling Gemini directly from the app (Phase 9, see docs/API.md) -->
-    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="pulse"
         android:name="${applicationName}"
@@ -57,11 +55,6 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
-        </intent>
-        <!-- url_launcher: opening the Google AI Studio link from Settings -->
-        <intent>
-            <action android:name="android.intent.action.VIEW"/>
-            <data android:scheme="https"/>
         </intent>
     </queries>
 </manifest>

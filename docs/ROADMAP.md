@@ -98,37 +98,43 @@ PLAN → PULSE → REFLECT loop works end-to-end on a real device.**
   correctly showed 25% average completion, matching best day, and the
   correct null-state for check-in consistency
 
-## Phase 9 — AI ⏳ (implemented, awaiting on-device verification)
-- Settings screen (previously a stub) now has a Gemini API key field,
-  stored via `flutter_secure_storage`
-- **Architecture change from the original plan**: calls Gemini directly
-  from the app rather than through a backend proxy — see docs/API.md for
-  why (single personal install, proxy's key-security rationale doesn't
-  apply, hosting was pure added complexity for this use case)
-- Today screen: "Split with AI" on the add-task sheet — free text →
-  multiple extracted tasks → user reviews/unchecks before anything is
-  added (source `user_added`, so completion % treats them exactly like
-  any other planned task)
-- Check-in screen: "Did something else come up?" now runs the text
-  through AI clean-up first, then a confirm/edit dialog, before logging
-  — replaces Phase 7's direct-add with the confirmation step that was
-  explicitly deferred pending an AI interpretation step
-- Reflection save: generates a short AI summary of the day (grounded only
-  in that day's real data) and stores it on the report; shown on the
-  Report screen labeled "AI SUMMARY", never presented as human-written
-- New `daily_reports.aiSummary` column (nullable; schema v1 → v2 migration)
-- Every AI call site falls back to the pre-AI v1 behavior on failure (no
-  key, no network, bad response) — nothing about the core loop depends on
-  AI working
-- Also fixed while touching this code: the reflection screen's
-  completion-rate calculation (which feeds `daily_reports` → History →
-  Insights) wasn't filtering out logged activities the way Today/Report
-  screens already did, so it could slightly overstate stored completion.
-  Now consistent everywhere.
-- **Not yet verified live on-device** — needs a real Gemini key (free,
-  from Google AI Studio) pasted into Settings and exercised through all
-  three flows before this gets marked done, per this project's Definition
-  of Done.
+## Phase 9 — AI ❌ (attempted, reverted)
+
+Built in full — Gemini called directly from the app (Settings API key
+entry via `flutter_secure_storage`, "Split with AI" on Today, AI
+clean-up + confirm on check-in activity logging, an AI daily summary on
+the report) — and code-verified working via a throwaway integration test
+against a fresh Android 16 emulator (`Pulse_Test_A16`), which reached
+Gemini's real servers cleanly. But the exact same code reliably failed
+on the primary test phone across three independent networking
+implementations (`dart:io` sockets, a hand-forced-IPv4 variant, and
+`cronet_http`/Android's own Cronet stack), which — combined with the
+emulator success — points to a phone-side restriction (most likely
+Samsung's Auto Blocker, which restricts sideloaded/unverified apps by
+default on newer One UI) rather than a code bug. Given that, the AI code
+was pulled back out entirely rather than shipped half-working. Full
+debugging trail preserved in git history (see the commits around this
+phase) if revisited later.
+
+**Incident, for the record**: an early version of the failure-logging
+code interpolated the caught network exception directly, which for
+`ClientException` embeds the full request URI — including the API key
+as a query parameter. It reached `adb logcat`, and once, chat. Both
+exposed keys were revoked immediately. Moot now that the AI code is
+gone, but worth remembering if AI is ever re-added: never log a
+request's URI/exception object when it can carry a secret in the query
+string — log an extracted, known-safe field instead.
+
+Also fixed while this was in and being debugged (kept — genuine
+correctness fixes, unrelated to AI): the reflection screen's completion
+rate calculation (which feeds `daily_reports` → History → Insights)
+wasn't excluding logged activities from the denominator the way
+Today/Report already did, so it could slightly overstate stored
+completion. Now consistent everywhere.
+
+A reusable Android 16 emulator (`Pulse_Test_A16`) came out of this
+investigation and stays available locally for fast iteration without
+wireless-ADB flakiness — see the "Emulator" note in ARCHITECTURE.md.
 
 ## Phase 10 — Multiple Check-ins
 - Configurable check-in frequency/quiet hours

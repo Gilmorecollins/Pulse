@@ -1834,24 +1834,12 @@ class $DailyReportsTable extends DailyReports
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _aiSummaryMeta = const VerificationMeta(
-    'aiSummary',
-  );
-  @override
-  late final GeneratedColumn<String> aiSummary = GeneratedColumn<String>(
-    'ai_summary',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     dailyPlanId,
     completionRate,
     generatedAt,
-    aiSummary,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1903,12 +1891,6 @@ class $DailyReportsTable extends DailyReports
     } else if (isInserting) {
       context.missing(_generatedAtMeta);
     }
-    if (data.containsKey('ai_summary')) {
-      context.handle(
-        _aiSummaryMeta,
-        aiSummary.isAcceptableOrUnknown(data['ai_summary']!, _aiSummaryMeta),
-      );
-    }
     return context;
   }
 
@@ -1934,10 +1916,6 @@ class $DailyReportsTable extends DailyReports
         DriftSqlType.dateTime,
         data['${effectivePrefix}generated_at'],
       )!,
-      aiSummary: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}ai_summary'],
-      ),
     );
   }
 
@@ -1952,13 +1930,11 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
   final String dailyPlanId;
   final double completionRate;
   final DateTime generatedAt;
-  final String? aiSummary;
   const DailyReport({
     required this.id,
     required this.dailyPlanId,
     required this.completionRate,
     required this.generatedAt,
-    this.aiSummary,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1967,9 +1943,6 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
     map['daily_plan_id'] = Variable<String>(dailyPlanId);
     map['completion_rate'] = Variable<double>(completionRate);
     map['generated_at'] = Variable<DateTime>(generatedAt);
-    if (!nullToAbsent || aiSummary != null) {
-      map['ai_summary'] = Variable<String>(aiSummary);
-    }
     return map;
   }
 
@@ -1979,9 +1952,6 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
       dailyPlanId: Value(dailyPlanId),
       completionRate: Value(completionRate),
       generatedAt: Value(generatedAt),
-      aiSummary: aiSummary == null && nullToAbsent
-          ? const Value.absent()
-          : Value(aiSummary),
     );
   }
 
@@ -1995,7 +1965,6 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
       dailyPlanId: serializer.fromJson<String>(json['dailyPlanId']),
       completionRate: serializer.fromJson<double>(json['completionRate']),
       generatedAt: serializer.fromJson<DateTime>(json['generatedAt']),
-      aiSummary: serializer.fromJson<String?>(json['aiSummary']),
     );
   }
   @override
@@ -2006,7 +1975,6 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
       'dailyPlanId': serializer.toJson<String>(dailyPlanId),
       'completionRate': serializer.toJson<double>(completionRate),
       'generatedAt': serializer.toJson<DateTime>(generatedAt),
-      'aiSummary': serializer.toJson<String?>(aiSummary),
     };
   }
 
@@ -2015,13 +1983,11 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
     String? dailyPlanId,
     double? completionRate,
     DateTime? generatedAt,
-    Value<String?> aiSummary = const Value.absent(),
   }) => DailyReport(
     id: id ?? this.id,
     dailyPlanId: dailyPlanId ?? this.dailyPlanId,
     completionRate: completionRate ?? this.completionRate,
     generatedAt: generatedAt ?? this.generatedAt,
-    aiSummary: aiSummary.present ? aiSummary.value : this.aiSummary,
   );
   DailyReport copyWithCompanion(DailyReportsCompanion data) {
     return DailyReport(
@@ -2035,7 +2001,6 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
       generatedAt: data.generatedAt.present
           ? data.generatedAt.value
           : this.generatedAt,
-      aiSummary: data.aiSummary.present ? data.aiSummary.value : this.aiSummary,
     );
   }
 
@@ -2045,15 +2010,13 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
           ..write('id: $id, ')
           ..write('dailyPlanId: $dailyPlanId, ')
           ..write('completionRate: $completionRate, ')
-          ..write('generatedAt: $generatedAt, ')
-          ..write('aiSummary: $aiSummary')
+          ..write('generatedAt: $generatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, dailyPlanId, completionRate, generatedAt, aiSummary);
+  int get hashCode => Object.hash(id, dailyPlanId, completionRate, generatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2061,8 +2024,7 @@ class DailyReport extends DataClass implements Insertable<DailyReport> {
           other.id == this.id &&
           other.dailyPlanId == this.dailyPlanId &&
           other.completionRate == this.completionRate &&
-          other.generatedAt == this.generatedAt &&
-          other.aiSummary == this.aiSummary);
+          other.generatedAt == this.generatedAt);
 }
 
 class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
@@ -2070,14 +2032,12 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
   final Value<String> dailyPlanId;
   final Value<double> completionRate;
   final Value<DateTime> generatedAt;
-  final Value<String?> aiSummary;
   final Value<int> rowid;
   const DailyReportsCompanion({
     this.id = const Value.absent(),
     this.dailyPlanId = const Value.absent(),
     this.completionRate = const Value.absent(),
     this.generatedAt = const Value.absent(),
-    this.aiSummary = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DailyReportsCompanion.insert({
@@ -2085,7 +2045,6 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
     required String dailyPlanId,
     required double completionRate,
     required DateTime generatedAt,
-    this.aiSummary = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        dailyPlanId = Value(dailyPlanId),
@@ -2096,7 +2055,6 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
     Expression<String>? dailyPlanId,
     Expression<double>? completionRate,
     Expression<DateTime>? generatedAt,
-    Expression<String>? aiSummary,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2104,7 +2062,6 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
       if (dailyPlanId != null) 'daily_plan_id': dailyPlanId,
       if (completionRate != null) 'completion_rate': completionRate,
       if (generatedAt != null) 'generated_at': generatedAt,
-      if (aiSummary != null) 'ai_summary': aiSummary,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2114,7 +2071,6 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
     Value<String>? dailyPlanId,
     Value<double>? completionRate,
     Value<DateTime>? generatedAt,
-    Value<String?>? aiSummary,
     Value<int>? rowid,
   }) {
     return DailyReportsCompanion(
@@ -2122,7 +2078,6 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
       dailyPlanId: dailyPlanId ?? this.dailyPlanId,
       completionRate: completionRate ?? this.completionRate,
       generatedAt: generatedAt ?? this.generatedAt,
-      aiSummary: aiSummary ?? this.aiSummary,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2142,9 +2097,6 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
     if (generatedAt.present) {
       map['generated_at'] = Variable<DateTime>(generatedAt.value);
     }
-    if (aiSummary.present) {
-      map['ai_summary'] = Variable<String>(aiSummary.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2158,7 +2110,6 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
           ..write('dailyPlanId: $dailyPlanId, ')
           ..write('completionRate: $completionRate, ')
           ..write('generatedAt: $generatedAt, ')
-          ..write('aiSummary: $aiSummary, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3127,7 +3078,6 @@ typedef $$DailyReportsTableCreateCompanionBuilder =
       required String dailyPlanId,
       required double completionRate,
       required DateTime generatedAt,
-      Value<String?> aiSummary,
       Value<int> rowid,
     });
 typedef $$DailyReportsTableUpdateCompanionBuilder =
@@ -3136,7 +3086,6 @@ typedef $$DailyReportsTableUpdateCompanionBuilder =
       Value<String> dailyPlanId,
       Value<double> completionRate,
       Value<DateTime> generatedAt,
-      Value<String?> aiSummary,
       Value<int> rowid,
     });
 
@@ -3166,11 +3115,6 @@ class $$DailyReportsTableFilterComposer
 
   ColumnFilters<DateTime> get generatedAt => $composableBuilder(
     column: $table.generatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get aiSummary => $composableBuilder(
-    column: $table.aiSummary,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3203,11 +3147,6 @@ class $$DailyReportsTableOrderingComposer
     column: $table.generatedAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<String> get aiSummary => $composableBuilder(
-    column: $table.aiSummary,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$DailyReportsTableAnnotationComposer
@@ -3236,9 +3175,6 @@ class $$DailyReportsTableAnnotationComposer
     column: $table.generatedAt,
     builder: (column) => column,
   );
-
-  GeneratedColumn<String> get aiSummary =>
-      $composableBuilder(column: $table.aiSummary, builder: (column) => column);
 }
 
 class $$DailyReportsTableTableManager
@@ -3276,14 +3212,12 @@ class $$DailyReportsTableTableManager
                 Value<String> dailyPlanId = const Value.absent(),
                 Value<double> completionRate = const Value.absent(),
                 Value<DateTime> generatedAt = const Value.absent(),
-                Value<String?> aiSummary = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DailyReportsCompanion(
                 id: id,
                 dailyPlanId: dailyPlanId,
                 completionRate: completionRate,
                 generatedAt: generatedAt,
-                aiSummary: aiSummary,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3292,14 +3226,12 @@ class $$DailyReportsTableTableManager
                 required String dailyPlanId,
                 required double completionRate,
                 required DateTime generatedAt,
-                Value<String?> aiSummary = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DailyReportsCompanion.insert(
                 id: id,
                 dailyPlanId: dailyPlanId,
                 completionRate: completionRate,
                 generatedAt: generatedAt,
-                aiSummary: aiSummary,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

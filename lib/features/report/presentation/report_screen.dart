@@ -132,47 +132,6 @@ class _ReportBody extends StatelessWidget {
             ),
           ),
         ),
-        if (data.report?.aiSummary != null) ...[
-          const SizedBox(height: 20),
-          Card(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'AI SUMMARY',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              letterSpacing: 1.2,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer,
-                            ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    data.report!.aiSummary!,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color:
-                              Theme.of(context).colorScheme.onPrimaryContainer,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
         if (completed.isNotEmpty) ...[
           const SizedBox(height: 28),
           _SectionHeader(icon: Icons.check_circle_outline, label: 'Completed'),

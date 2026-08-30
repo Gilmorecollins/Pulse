@@ -61,12 +61,6 @@ dependencies:
   timezone: ^0.10.1
   flutter_timezone: ^4.1.1
 
-  # AI (Phase 9) — Gemini called directly from the app (see docs/API.md);
-  # the key lives in secure on-device storage, never checked in.
-  http: ^1.2.2
-  flutter_secure_storage: ^9.2.2
-  url_launcher: ^6.3.1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

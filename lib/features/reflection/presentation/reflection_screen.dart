@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/ai/ai_providers.dart';
 import '../../../core/models/mood.dart';
 import '../../../core/models/task_enums.dart';
 import '../../report/presentation/report_providers.dart';
@@ -66,46 +65,6 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
           dailyPlanId: plan.id,
           completionRate: completionRate,
         );
-
-    final hasAiKey = await ref.read(hasAiKeyProvider.future);
-    if (hasAiKey) {
-      try {
-        final activities = tasks.where((t) {
-          final source = TaskSource.fromDb(t.source);
-          return source == TaskSource.pulseCheckin ||
-              source == TaskSource.aiSuggested;
-        });
-        final summary = await ref.read(geminiServiceProvider).summarizeDay(
-              completedTasks: planned
-                  .where(
-                    (t) =>
-                        TaskStatus.fromDb(t.status) == TaskStatus.completed,
-                  )
-                  .map((t) => t.title)
-                  .toList(),
-              notCompletedTasks: planned
-                  .where(
-                    (t) =>
-                        TaskStatus.fromDb(t.status) != TaskStatus.completed,
-                  )
-                  .map((t) => t.title)
-                  .toList(),
-              activities: activities.map((t) => t.title).toList(),
-              mood: mood.label,
-              biggestWin: _winController.text.trim().isEmpty
-                  ? null
-                  : _winController.text.trim(),
-              carryForward: _carryController.text.trim().isEmpty
-                  ? null
-                  : _carryController.text.trim(),
-            );
-        await ref
-            .read(reportRepositoryProvider)
-            .updateAiSummary(plan.id, summary);
-      } catch (_) {
-        // Best-effort — the report still works without a summary.
-      }
-    }
 
     if (mounted) context.go('/report/${plan.id}');
   }

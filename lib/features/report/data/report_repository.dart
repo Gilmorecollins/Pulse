@@ -61,17 +61,6 @@ class ReportRepository {
     return _db.into(_db.dailyReports).insertReturning(report);
   }
 
-  /// Fills in the AI-generated summary after the report itself already
-  /// exists — summary generation is best-effort and shouldn't block or
-  /// fail the report's creation (see docs/ARCHITECTURE.md: AI is always a
-  /// suggestion layered on a working app, never a dependency of it).
-  Future<void> updateAiSummary(String dailyPlanId, String summary) async {
-    final existing = await getReportForPlan(dailyPlanId);
-    if (existing == null) return;
-    await (_db.update(_db.dailyReports)..where((r) => r.id.equals(existing.id)))
-        .write(DailyReportsCompanion(aiSummary: Value(summary)));
-  }
-
   Stream<List<ReportSummary>> watchReportHistory() {
     final query = _db.select(_db.dailyReports).join([
       innerJoin(
