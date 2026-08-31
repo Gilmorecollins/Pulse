@@ -142,20 +142,35 @@ class _ReportBody extends StatelessWidget {
         ),
         if (completed.isNotEmpty) ...[
           const SizedBox(height: 28),
-          _SectionHeader(icon: Icons.check_circle_outline, label: 'Completed'),
+          _SectionHeader(
+            icon: Icons.check_circle,
+            label: 'Done',
+            color: Colors.green,
+          ),
           const SizedBox(height: 12),
-          ...completed.map((t) => _TaskLine(title: t.title)),
+          for (var i = 0; i < completed.length; i++)
+            _TaskLine(
+              number: i + 1,
+              title: completed[i].title,
+              description: completed[i].description,
+              done: true,
+            ),
         ],
         if (notCompleted.isNotEmpty) ...[
           const SizedBox(height: 28),
           _SectionHeader(
-            icon: Icons.radio_button_unchecked,
-            label: 'Not completed',
+            icon: Icons.circle,
+            label: 'Carry forward to the next day',
+            color: Colors.red,
           ),
           const SizedBox(height: 12),
-          ...notCompleted.map(
-            (t) => _TaskLine(title: t.title, note: t.explanationNote),
-          ),
+          for (var i = 0; i < notCompleted.length; i++)
+            _TaskLine(
+              number: completed.length + i + 1,
+              title: notCompleted[i].title,
+              description: notCompleted[i].description,
+              note: notCompleted[i].explanationNote,
+            ),
         ],
         if (activities.isNotEmpty) ...[
           const SizedBox(height: 28),
@@ -214,16 +229,17 @@ class _ReportBody extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.icon, required this.label});
+  const _SectionHeader({required this.icon, required this.label, this.color});
 
   final IconData icon;
   final String label;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+        Icon(icon, size: 18, color: color ?? Theme.of(context).colorScheme.primary),
         const SizedBox(width: 8),
         Text(
           label.toUpperCase(),
@@ -237,10 +253,19 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _TaskLine extends StatelessWidget {
-  const _TaskLine({required this.title, this.note});
+  const _TaskLine({
+    this.number,
+    required this.title,
+    this.description,
+    this.note,
+    this.done = false,
+  });
 
+  final int? number;
   final String title;
+  final String? description;
   final String? note;
+  final bool done;
 
   @override
   Widget build(BuildContext context) {
@@ -249,12 +274,23 @@ class _TaskLine extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('•  $title', style: Theme.of(context).textTheme.bodyLarge),
+          Text(
+            number == null ? '•  $title' : '$number. $title${done ? ' ✓' : ''}',
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          if (description != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, top: 2),
+              child: Text(
+                description!,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
           if (note != null)
             Padding(
               padding: const EdgeInsets.only(left: 16, top: 2),
               child: Text(
-                '"$note"',
+                'Note: "$note"',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontStyle: FontStyle.italic,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,

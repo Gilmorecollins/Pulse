@@ -304,5 +304,38 @@ void main() {
       expect(text, contains('No tasks planned'));
       expect(text, isNot(contains('0%')));
     });
+
+    test('numbers tasks continuously under Done then Carry Forward, with '
+        'each task\'s description shown', () async {
+      final plan = await today.getOrCreateTodayPlan();
+      final done = await today.addTask(
+        dailyPlanId: plan.id,
+        title: 'Visit branch',
+        description: 'Met with officials to discuss options.',
+      );
+      await today.setTaskStatus(done.id, TaskStatus.completed);
+      final open = await today.addTask(
+        dailyPlanId: plan.id,
+        title: 'Follow up with client',
+        description: 'Estimate the period the statement is needed by.',
+      );
+
+      final data = ReportViewData(
+        plan: plan,
+        tasks: [
+          await today.getTaskById(done.id),
+          await today.getTaskById(open.id),
+        ],
+        reflection: null,
+      );
+      final text = buildReportShareText(data);
+
+      expect(text, contains('🟢 *DONE*'));
+      expect(text, contains('1. Visit branch ✅'));
+      expect(text, contains('Met with officials to discuss options.'));
+      expect(text, contains('🔴 *CARRY FORWARD TO THE NEXT DAY*'));
+      expect(text, contains('2. Follow up with client'));
+      expect(text, contains('Estimate the period the statement is needed by.'));
+    });
   });
 }

@@ -1,41 +1,54 @@
 import 'package:flutter/material.dart';
 
-/// Pulse's design system: calm, minimal, premium. See docs/PRODUCT.md
-/// ("Design principles") for the intent behind these choices.
+/// Pulse's design system: "Eucalyptus Glow" — calm, minimal, botanical.
+/// See docs/PRODUCT.md ("Design principles") for the intent behind these
+/// choices. `cream` and `sage` are the two colors from the user's own
+/// design swatch; everything else here (deeper/lighter sage, the dark-mode
+/// background, the error tone) is derived to fit that palette rather than
+/// specified — flag any of those that don't match the intended look.
 abstract final class PulseColors {
-  // Deep navy primary
-  static const Color navy = Color(0xFF0B1220);
-  static const Color navyLight = Color(0xFF1B2438);
+  /// #F4EFE6 — from the design swatch. Light-mode surface/background.
+  static const Color cream = Color(0xFFF4EFE6);
 
-  // Electric blue / violet accent
-  static const Color accent = Color(0xFF6C5CE7);
-  static const Color accentAlt = Color(0xFF4F8CFF);
+  /// #A7C4A0 — from the design swatch. Primary brand color.
+  static const Color sage = Color(0xFFA7C4A0);
 
-  static const Color success = Color(0xFF2ECC71);
-  static const Color warning = Color(0xFFF5A623);
-  static const Color error = Color(0xFFE05260);
+  // Derived: a deeper sage for contrast on cream (buttons, selected states)
+  // and a lighter sage for use as the primary against a dark background.
+  static const Color sageDeep = Color(0xFF6E8967);
+  static const Color sageLight = Color(0xFFC3DABC);
+
+  // Derived: a warm, deep green-charcoal dark-mode background — keeps the
+  // botanical undertone rather than defaulting to a cold navy/black.
+  static const Color charcoal = Color(0xFF1B211A);
+  static const Color charcoalLight = Color(0xFF262E24);
+
+  // Derived: a warm terracotta rather than a harsh red, to stay in the
+  // same earthy family as the rest of the palette.
+  static const Color terracotta = Color(0xFFC6674A);
 }
 
 abstract final class PulseTheme {
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(
-      seedColor: PulseColors.accent,
+      seedColor: PulseColors.sage,
       brightness: Brightness.light,
-      primary: PulseColors.navy,
-      secondary: PulseColors.accent,
-      error: PulseColors.error,
+      primary: PulseColors.sageDeep,
+      secondary: PulseColors.sage,
+      surface: PulseColors.cream,
+      error: PulseColors.terracotta,
     );
     return _base(scheme);
   }
 
   static ThemeData dark() {
     final scheme = ColorScheme.fromSeed(
-      seedColor: PulseColors.accent,
+      seedColor: PulseColors.sage,
       brightness: Brightness.dark,
-      surface: PulseColors.navy,
-      primary: PulseColors.accentAlt,
-      secondary: PulseColors.accent,
-      error: PulseColors.error,
+      surface: PulseColors.charcoal,
+      primary: PulseColors.sageLight,
+      secondary: PulseColors.sage,
+      error: PulseColors.terracotta,
     );
     return _base(scheme);
   }

@@ -200,3 +200,22 @@ business phone number, and Meta-approved message templates, real
 setup/verification cost for what is here one person messaging
 themselves. Revisit the full API only if this is ever used by more than
 one person, or automatic (no-tap) delivery becomes a real requirement.
+
+## Deferred — App lock screen (on hold, pending design)
+
+A local PIN/password gate on app open — not a real account system. No
+email, no registration, no backend: confirmed with the user this is
+purely a "someone else picks up my phone" lock, which keeps it
+consistent with Pulse's local-only, single-user architecture (a full
+email+password *account* system was considered and explicitly rejected —
+see docs/ARCHITECTURE.md's local-first reasoning, which a backend-auth
+system would contradict for no real benefit here).
+
+On hold specifically waiting on the user's own visual design/animation
+reference (they want a particular look, to be supplied as screenshots —
+a TikTok link alone isn't fetchable for its visual content, screenshots
+of key animation frames are needed instead). Open functional questions
+for when this resumes: PIN vs. full password, recovery behavior (no
+email exists to reset via — a "reset the lock without wiping data"
+path was floated), and whether it re-locks every time the app leaves
+the foreground (more secure) or only once per full app close.

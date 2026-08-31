@@ -6,8 +6,12 @@ import 'report_providers.dart';
 
 /// Plain-text report summary for sharing — same sections
 /// `_ReportBody` renders, formatted as a message rather than widgets.
-/// See docs/API.md for why this is a tap-to-send WhatsApp deep link
-/// rather than the WhatsApp Business API.
+/// Styled after a classic numbered daily-tracker message (bold title,
+/// numbered tasks with a description under each, a Done section and a
+/// Carry Forward section) rather than a generic bullet list. See
+/// docs/API.md for why this is a tap-to-send WhatsApp deep link rather
+/// than the WhatsApp Business API — `*text*` below is WhatsApp's own
+/// bold markup, not markdown.
 String buildReportShareText(ReportViewData data) {
   final planned = data.tasks
       .where(
@@ -32,8 +36,9 @@ String buildReportShareText(ReportViewData data) {
   final total = planned.length;
   final pct = total == 0 ? 0 : ((completed.length / total) * 100).round();
 
+  final title = DateFormat('MMMM d, yyyy').format(data.plan.date).toUpperCase();
   final buffer = StringBuffer()
-    ..writeln('📊 Pulse — ${DateFormat('EEEE, d MMMM').format(data.plan.date)}')
+    ..writeln('*DAILY TASK TRACKER — $title*')
     ..writeln()
     ..writeln(
       total == 0
@@ -41,29 +46,37 @@ String buildReportShareText(ReportViewData data) {
           : 'Productivity: $pct% (${completed.length}/$total tasks)',
     );
 
+  // Numbered continuously across Done and Carry Forward, matching a
+  // running daily checklist rather than two separately-numbered lists.
+  var itemNumber = 0;
+
   if (completed.isNotEmpty) {
     buffer
       ..writeln()
-      ..writeln('✅ Completed');
+      ..writeln('🟢 *DONE*');
     for (final t in completed) {
-      buffer.writeln('• ${t.title}');
+      itemNumber++;
+      buffer.writeln('$itemNumber. ${t.title} ✅');
+      if (t.description != null) buffer.writeln(t.description);
     }
   }
 
   if (notCompleted.isNotEmpty) {
     buffer
       ..writeln()
-      ..writeln('◻️ Not completed');
+      ..writeln('🔴 *CARRY FORWARD TO THE NEXT DAY*');
     for (final t in notCompleted) {
-      final note = t.explanationNote;
-      buffer.writeln(note == null ? '• ${t.title}' : '• ${t.title} — "$note"');
+      itemNumber++;
+      buffer.writeln('$itemNumber. ${t.title}');
+      if (t.description != null) buffer.writeln(t.description);
+      if (t.explanationNote != null) buffer.writeln('Note: "${t.explanationNote}"');
     }
   }
 
   if (activities.isNotEmpty) {
     buffer
       ..writeln()
-      ..writeln('✨ New activities');
+      ..writeln('✨ *New activities*');
     for (final t in activities) {
       buffer.writeln('• ${t.title}');
     }

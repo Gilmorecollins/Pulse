@@ -33,6 +33,9 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
   late final _controller = TextEditingController(
     text: widget.existingTask?.title ?? '',
   );
+  late final _descriptionController = TextEditingController(
+    text: widget.existingTask?.description ?? '',
+  );
   late DateTime _day = _dateOnly(
     widget.existingTask?.plannedFor ?? widget.initialDay ?? DateTime.now(),
   );
@@ -49,6 +52,7 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
   @override
   void dispose() {
     _controller.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -82,6 +86,8 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
         ? null
         : DateTime(_day.year, _day.month, _day.day, time.hour, time.minute);
 
+    final description = _descriptionController.text.trim();
+
     if (_isEditing) {
       final task = widget.existingTask!;
       await repo.updateTaskDetails(
@@ -89,6 +95,7 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
         title: title,
         plannedFor: _day,
         expectedCompletionTime: completionTime,
+        description: description,
       );
       // Unconditional: cheap no-op if nothing was scheduled, and covers
       // every case (time changed, cleared, or day moved) in one place.
@@ -111,6 +118,7 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
         title: title,
         plannedFor: _day,
         expectedCompletionTime: completionTime,
+        description: description,
       );
       if (completionTime != null) {
         await scheduleTaskCheckIn(
@@ -151,9 +159,20 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
           TextField(
             controller: _controller,
             autofocus: true,
-            textInputAction: TextInputAction.done,
+            textInputAction: TextInputAction.next,
             decoration: const InputDecoration(
               hintText: 'e.g. Finish portfolio',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _descriptionController,
+            minLines: 1,
+            maxLines: 3,
+            textInputAction: TextInputAction.done,
+            decoration: const InputDecoration(
+              hintText: 'Add a short description (optional)',
               border: OutlineInputBorder(),
             ),
             onSubmitted: (_) => _submit(),

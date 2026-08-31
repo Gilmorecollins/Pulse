@@ -8,6 +8,8 @@ class PreferencesRepository {
   static const _keyOnboardingComplete = 'onboarding_complete';
   static const _keyName = 'user_name';
   static const _keyReportTime = 'report_time';
+  static const _keyThemeMode = 'theme_mode';
+  static const _keyNotificationsEnabled = 'notifications_enabled';
 
   Future<bool> isOnboardingComplete() async {
     final prefs = await SharedPreferences.getInstance();
@@ -19,9 +21,19 @@ class PreferencesRepository {
     return prefs.getString(_keyName);
   }
 
+  Future<void> setName(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyName, name.trim());
+  }
+
   Future<TimeOfDay?> getReportTime() async {
     final prefs = await SharedPreferences.getInstance();
     return _parseTime(prefs.getString(_keyReportTime));
+  }
+
+  Future<void> setReportTime(TimeOfDay time) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyReportTime, _formatTime(time));
   }
 
   Future<void> completeOnboarding({
@@ -32,6 +44,33 @@ class PreferencesRepository {
     await prefs.setString(_keyName, name.trim());
     await prefs.setString(_keyReportTime, _formatTime(reportTime));
     await prefs.setBool(_keyOnboardingComplete, true);
+  }
+
+  Future<bool> getNotificationsEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keyNotificationsEnabled) ?? true;
+  }
+
+  Future<void> setNotificationsEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyNotificationsEnabled, enabled);
+  }
+
+  Future<ThemeMode> getThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    switch (prefs.getString(_keyThemeMode)) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyThemeMode, mode.name);
   }
 
   String _formatTime(TimeOfDay time) =>

@@ -88,8 +88,10 @@ class TodayRepository {
     int? estimatedDuration,
     DateTime? plannedFor,
     DateTime? expectedCompletionTime,
+    String? description,
   }) async {
     final trimmed = title.trim();
+    final trimmedDescription = description?.trim();
     final task = TasksCompanion.insert(
       id: _uuid.v4(),
       dailyPlanId: dailyPlanId,
@@ -99,6 +101,11 @@ class TodayRepository {
       source: Value(source.toDb()),
       estimatedDuration: Value(estimatedDuration),
       expectedCompletionTime: Value(expectedCompletionTime),
+      description: Value(
+        trimmedDescription == null || trimmedDescription.isEmpty
+            ? null
+            : trimmedDescription,
+      ),
     );
     return _db.into(_db.tasks).insertReturning(task);
   }
@@ -189,14 +196,21 @@ class TodayRepository {
     required String title,
     required DateTime plannedFor,
     DateTime? expectedCompletionTime,
+    String? description,
   }) async {
     final plan = await getOrCreatePlanForDate(plannedFor);
+    final trimmedDescription = description?.trim();
     await (_db.update(_db.tasks)..where((t) => t.id.equals(taskId))).write(
       TasksCompanion(
         title: Value(title.trim()),
         dailyPlanId: Value(plan.id),
         plannedFor: Value(_dateOnly(plannedFor)),
         expectedCompletionTime: Value(expectedCompletionTime),
+        description: Value(
+          trimmedDescription == null || trimmedDescription.isEmpty
+              ? null
+              : trimmedDescription,
+        ),
       ),
     );
   }

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'core/notifications/notification_provider.dart';
 import 'core/notifications/notification_service.dart';
+import 'core/preferences/preferences_provider.dart';
+import 'core/preferences/preferences_repository.dart';
 import 'core/router/app_router.dart';
 import 'features/today/presentation/today_providers.dart';
 
@@ -13,9 +15,12 @@ void main() async {
   final notificationService = NotificationService();
   await notificationService.initialize();
 
+  final storedThemeMode = await PreferencesRepository().getThemeMode();
+
   final container = ProviderContainer(
     overrides: [
       notificationServiceProvider.overrideWithValue(notificationService),
+      themeModeProvider.overrideWith((ref) => storedThemeMode),
     ],
   );
 
