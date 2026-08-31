@@ -136,7 +136,7 @@ A reusable Android 16 emulator (`Pulse_Test_A16`) came out of this
 investigation and stays available locally for fast iteration without
 wireless-ADB flakiness — see the "Emulator" note in ARCHITECTURE.md.
 
-## Phase 10 — Per-task Check-ins ⏳ (implemented, on-device verification in progress)
+## Phase 10 — Per-task Check-ins ✅
 
 Redesigned from the original "configurable frequency/quiet hours"
 placeholder into something more useful, driven by real usage/feedback:
@@ -175,13 +175,17 @@ check-ins are per-task, not one fixed daily prompt.
   already verified working in Phases 4-5, but a task-level alarm can sit
   scheduled for hours/days rather than firing same-day, which is untested
   territory. Worth a dedicated pass once this is in regular use.
-- **Not yet marked done** — implemented, `flutter analyze`/`flutter test`
-  clean (17 tests), but needs the on-device walkthrough (edit, carry
-  forward with a time, explain → transfer/end, Week tab, report/WhatsApp
-  showing an explanation) before this gets a ✅, per the project's
-  Definition of Done.
+- **Verified live on-device**: `flutter analyze`/`flutter test` clean
+  (18 tests), plus a direct DB pull confirming real data — pending,
+  responded, *and* skipped check-ins all present (skipped proving an
+  edit-before-fire correctly supersedes a pending check-in rather than
+  leaving it dangling), and a task ended via "explain → end task" showing
+  up exactly as designed: `status: cancelled`,
+  `explanation_note: "i got an injured toe"`. Editing, carry-forward with
+  a time, the Week tab, and the In Progress/Completed grouping were all
+  walked through live on the device as well.
 
-## Phase 11 — WhatsApp Delivery ⏳ (tap-to-send shipped; full Business API still deferred)
+## Phase 11 — WhatsApp Delivery ✅ (tap-to-send; full Business API still deferred)
 
 Built as part of Phase 10's work, in trimmed form: a "Send to WhatsApp"
 button on the Report screen opens WhatsApp (via the phone-number-less
