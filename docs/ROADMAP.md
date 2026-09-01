@@ -201,16 +201,31 @@ setup/verification cost for what is here one person messaging
 themselves. Revisit the full API only if this is ever used by more than
 one person, or automatic (no-tap) delivery becomes a real requirement.
 
-## Phase 12 — Google Drive Backup 🚧 (in progress)
+## Phase 12 — Google Drive Backup ✅
 
 Manual backup/restore of the whole local database to the user's own
 Google Drive (App Data folder scope), triggered by the testing-device
 switch (S25 → secondary phone) exposing that there was previously no way
 to carry data across devices. See docs/ARCHITECTURE.md's "Backup"
 section for the design (`VACUUM INTO` snapshot, not per-table export;
-manual only, no background sync, no auto-restore). Code landed; pending
-on-device sign-in/backup/restore verification once the Google Cloud
-Console OAuth client is fully configured.
+manual only, no background sync, no auto-restore).
+
+Google Cloud Console setup: OAuth consent screen (External, Testing
+status) + an Android OAuth client registered against the debug
+keystore's SHA-1 (see build.gradle.kts's signing-config note — release
+builds currently sign with the same debug keystore, so this covers both
+for now). The "Google hasn't verified this app" interstitial on sign-in
+is expected or Testing-status apps and not a misconfiguration — the
+project owner's own account gets implicit test access without needing
+to be added to the test-users list explicitly.
+
+**Verified live on-device**: sign-in completes through the unverified-app
+interstitial; Settings shows the connected account; "Back up now"
+succeeds; a task added after a backup, then a restore from that backup,
+correctly removed the post-backup task on relaunch while preserving
+everything that existed at backup time — confirming the file-replace +
+restart flow works end-to-end, not just that the upload/download calls
+succeed.
 
 ## Phase 13 — Recurring Tasks ✅
 
@@ -232,16 +247,17 @@ narrower device was fixed by wrapping the banner text in `Expanded`);
 Insights correctly still showed its original empty state rather than a
 premature/broken trend chart, since no day had a generated report yet.
 
-## Phase 14 — Insights Trend View 🚧 (code complete, pending live data)
+## Phase 14 — Insights Trend View ✅
 
 A hand-rolled bar chart of daily completion rate (`InsightsRepository
 .computeCompletionTrend`, 60-day window) added above the existing stat
 cards — see docs/ARCHITECTURE.md. No charting package added; not needed
-at this data volume. `flutter analyze`/`flutter test` clean, including a
-dedicated `computeCompletionTrend` test file. Not yet exercised
-on-device against a real generated report (needs at least one completed
-day → reflection → report cycle) — do that as part of the next full
-day's use.
+at this data volume.
+
+**Verified live on-device**: forced a same-day reflection/report cycle
+(temporarily setting the report time a couple minutes out), confirmed
+the report generated, and confirmed a single trend bar appeared above
+the stat cards on Insights matching that day's completion rate.
 
 ## Deferred — App lock screen (on hold, pending design)
 
