@@ -1,54 +1,63 @@
 import 'package:flutter/material.dart';
 
-/// Pulse's design system: "Eucalyptus Glow" — calm, minimal, botanical.
-/// See docs/PRODUCT.md ("Design principles") for the intent behind these
-/// choices. `cream` and `sage` are the two colors from the user's own
-/// design swatch; everything else here (deeper/lighter sage, the dark-mode
-/// background, the error tone) is derived to fit that palette rather than
-/// specified — flag any of those that don't match the intended look.
+/// Pulse's design system: "Navy Mirage" — cool, moody, matches the app
+/// icon's diagonal navy/blue gradient. See docs/PRODUCT.md ("Design
+/// principles") for the intent behind these choices. `navyDeep` and
+/// `navyBlue` are the two colors from the user's own design swatch;
+/// everything else here (the lighter primary for dark mode, the elevated
+/// dark surface, the light-mode background, the error tone) is derived
+/// to fit that palette rather than specified — flag any of those that
+/// don't match the intended look.
 abstract final class PulseColors {
-  /// #F4EFE6 — from the design swatch. Light-mode surface/background.
-  static const Color cream = Color(0xFFF4EFE6);
+  /// #141E30 — from the design swatch. Deep navy; the dark-mode surface
+  /// and a strong contrast tone in light mode.
+  static const Color navyDeep = Color(0xFF141E30);
 
-  /// #A7C4A0 — from the design swatch. Primary brand color.
-  static const Color sage = Color(0xFFA7C4A0);
+  /// #3F5E96 — from the design swatch. Primary brand color, matching
+  /// the app icon's lighter gradient half.
+  static const Color navyBlue = Color(0xFF3F5E96);
 
-  // Derived: a deeper sage for contrast on cream (buttons, selected states)
-  // and a lighter sage for use as the primary against a dark background.
-  static const Color sageDeep = Color(0xFF6E8967);
-  static const Color sageLight = Color(0xFFC3DABC);
+  // Derived: a lighter tint of navyBlue — needed as the primary against
+  // navyDeep in dark mode, since navyBlue itself doesn't have enough
+  // contrast against a background that dark.
+  static const Color navyBlueLight = Color(0xFF7C97C7);
 
-  // Derived: a warm, deep green-charcoal dark-mode background — keeps the
-  // botanical undertone rather than defaulting to a cold navy/black.
-  static const Color charcoal = Color(0xFF1B211A);
-  static const Color charcoalLight = Color(0xFF262E24);
+  // Derived: a slightly-lifted navy for elevated surfaces in dark mode
+  // (cards, sheets) so they read as "above" the base background rather
+  // than blending into it.
+  static const Color navyDeepLight = Color(0xFF1E2A42);
 
-  // Derived: a warm terracotta rather than a harsh red, to stay in the
-  // same earthy family as the rest of the palette.
-  static const Color terracotta = Color(0xFFC6674A);
+  // Derived: a cool, near-white background for light mode — keeps the
+  // palette's cool undertone rather than defaulting to plain white.
+  static const Color mist = Color(0xFFF1F4FA);
+
+  // Derived: a warm coral-red error tone, deliberately outside the blue
+  // family so error states stay visually distinct rather than blending
+  // into the primary palette.
+  static const Color coral = Color(0xFFC4574B);
 }
 
 abstract final class PulseTheme {
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(
-      seedColor: PulseColors.sage,
+      seedColor: PulseColors.navyBlue,
       brightness: Brightness.light,
-      primary: PulseColors.sageDeep,
-      secondary: PulseColors.sage,
-      surface: PulseColors.cream,
-      error: PulseColors.terracotta,
+      primary: PulseColors.navyBlue,
+      secondary: PulseColors.navyDeep,
+      surface: PulseColors.mist,
+      error: PulseColors.coral,
     );
     return _base(scheme);
   }
 
   static ThemeData dark() {
     final scheme = ColorScheme.fromSeed(
-      seedColor: PulseColors.sage,
+      seedColor: PulseColors.navyBlue,
       brightness: Brightness.dark,
-      surface: PulseColors.charcoal,
-      primary: PulseColors.sageLight,
-      secondary: PulseColors.sage,
-      error: PulseColors.terracotta,
+      surface: PulseColors.navyDeep,
+      primary: PulseColors.navyBlueLight,
+      secondary: PulseColors.navyBlue,
+      error: PulseColors.coral,
     );
     return _base(scheme);
   }
