@@ -259,6 +259,28 @@ at this data volume.
 the report generated, and confirmed a single trend bar appeared above
 the stat cards on Insights matching that day's completion rate.
 
+## Phase 15 — GitHub Releases Distribution + Update Check 🚧 (code complete, pending live verification)
+
+First tagged release, `v1.0.0`, published to GitHub Releases
+(`github.com/Gilmorecollins/Pulse/releases/tag/v1.0.0`) as a downloadable
+release APK — Pulse's actual distribution channel, since it isn't on the
+Play Store. See docs/ARCHITECTURE.md's "Distribution and update check"
+section.
+
+Paired with an in-app update check: a dismissible banner on Today when a
+newer GitHub release exists than the installed version, linking out to
+the release page rather than auto-installing anything. Requires the repo
+to stay public for the unauthenticated releases API to work — the repo
+was briefly made private mid-session (to scope who could download the
+first release) and switched back to public specifically to keep this
+working.
+
+Code lands with a new `test/version_compare_test.dart` (the tag/version
+comparison logic) — not yet exercised against a real second release
+(needs `v1.0.1`+ to exist to confirm the banner actually appears,
+dismisses correctly, and reappears for a further release after a prior
+one was dismissed).
+
 ## Deferred — App lock screen (on hold, pending design)
 
 A local PIN/password gate on app open — not a real account system. No

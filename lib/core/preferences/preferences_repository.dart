@@ -11,6 +11,7 @@ class PreferencesRepository {
   static const _keyThemeMode = 'theme_mode';
   static const _keyNotificationsEnabled = 'notifications_enabled';
   static const _keyLastSyncedAt = 'drive_last_synced_at';
+  static const _keyDismissedUpdateVersion = 'dismissed_update_version';
 
   Future<bool> isOnboardingComplete() async {
     final prefs = await SharedPreferences.getInstance();
@@ -90,6 +91,19 @@ class PreferencesRepository {
   Future<void> setLastSyncedAt(DateTime time) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyLastSyncedAt, time.millisecondsSinceEpoch);
+  }
+
+  /// The version the user dismissed the update banner for, so it doesn't
+  /// reappear for that same release — but does reappear once a newer one
+  /// ships.
+  Future<String?> getDismissedUpdateVersion() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyDismissedUpdateVersion);
+  }
+
+  Future<void> setDismissedUpdateVersion(String version) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyDismissedUpdateVersion, version);
   }
 
   String _formatTime(TimeOfDay time) =>

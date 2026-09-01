@@ -73,6 +73,13 @@ dependencies:
   googleapis: ^13.2.0
   extension_google_sign_in_as_googleapis_auth: ^2.0.12
 
+  # Update check — compares the installed version (package_info_plus)
+  # against the latest GitHub release (a plain http GET, no auth: the
+  # repo/releases are public) and prompts to update if newer. See
+  # lib/core/update/.
+  http: ^1.2.2
+  package_info_plus: ^8.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

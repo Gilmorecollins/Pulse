@@ -48,6 +48,25 @@ closed first and the app asks to be restarted afterward rather than
 attempting a hot-swap of a connection other screens may still be
 streaming from.
 
+## Distribution and update check
+
+No Play Store listing — Pulse is sideloaded from GitHub Releases
+(`github.com/Gilmorecollins/Pulse/releases`), tagged `vMAJOR.MINOR.PATCH`
+matching `pubspec.yaml`'s `version:`. Release builds sign with the debug
+keystore (see `android/app/build.gradle.kts`'s `TODO`) — fine for
+personal/sideloaded distribution, but note this if a dedicated release
+signing key is ever added later.
+
+`lib/core/update/` checks GitHub's public releases API
+(`/repos/.../releases/latest`, no auth) once per app session and shows a
+dismissible banner on Today (`_UpdateBanner`) if a newer tag exists than
+the installed version (`package_info_plus`). "Update" opens the release
+page in the browser — the app never auto-downloads or auto-installs an
+APK. **This depends on the repo staying public**: a private repo's
+releases API requires auth this app doesn't carry, so the check would
+silently find nothing (fails closed, not with an error — see
+`UpdateCheckService.fetchLatestRelease`'s error handling).
+
 ## Layering
 
 Lightweight clean-architecture split, per feature:

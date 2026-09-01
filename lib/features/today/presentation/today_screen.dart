@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/database/database.dart';
 import '../../../core/models/task_enums.dart';
 import '../../../core/preferences/preferences_provider.dart';
+import '../../../core/update/update_check_service.dart';
+import '../../../core/update/update_providers.dart';
 import 'add_edit_task_sheet.dart';
 import 'task_tile.dart';
 import 'today_providers.dart';
@@ -220,6 +223,16 @@ class _TodayContent extends ConsumerWidget {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final release = ref.watch(updateInfoProvider).valueOrNull;
+                    if (release == null) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: _UpdateBanner(release: release),
+                    );
+                  },
+                ),
                 const SizedBox(height: 24),
                 _ProgressCard(
                   progress: progress,
@@ -280,6 +293,74 @@ class _TaskSectionSliver extends StatelessWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Dismissible notice that a newer release exists (see
+/// core/update/update_providers.dart) — "Update" opens the GitHub
+/// release page in the browser so the user reviews/downloads it
+/// themselves; this app never auto-downloads or auto-installs an APK.
+class _UpdateBanner extends ConsumerWidget {
+  const _UpdateBanner({required this.release});
+
+  final LatestRelease release;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      color: scheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              Icons.system_update_outlined,
+              color: scheme.onSecondaryContainer,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '${release.name} is available',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSecondaryContainer,
+                    ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                final launched = await launchUrl(
+                  Uri.parse(release.releaseUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+                if (!launched && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Couldn't open the release page"),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Update'),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.close,
+                size: 18,
+                color: scheme.onSecondaryContainer,
+              ),
+              tooltip: 'Dismiss',
+              onPressed: () async {
+                await ref
+                    .read(preferencesRepositoryProvider)
+                    .setDismissedUpdateVersion(release.version);
+                ref.invalidate(updateInfoProvider);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
