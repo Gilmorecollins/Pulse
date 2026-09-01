@@ -29,6 +29,14 @@ class InsightsSummary {
   final double? checkInConsistency;
 }
 
+/// One day's completion rate, for the Insights trend chart.
+class TrendPoint {
+  TrendPoint({required this.date, required this.completionRate});
+
+  final DateTime date;
+  final double completionRate;
+}
+
 class InsightsRepository {
   InsightsRepository(this._db, this._todayRepository);
 
@@ -102,5 +110,31 @@ class InsightsRepository {
       averageDailyTasks: totalPlannedTasks / entries.length,
       checkInConsistency: checkInConsistency,
     );
+  }
+
+  /// Ascending-by-date completion rates, for the trend chart. Reuses the
+  /// same DailyReports ⨝ DailyPlans join as computeSummary(), but
+  /// deliberately skips that method's per-day getTasksForPlan() lookups
+  /// — completionRate is already stored per report, so a trend never
+  /// needs the underlying task list.
+  Future<List<TrendPoint>> computeCompletionTrend({DateTime? since}) async {
+    final query = _db.select(_db.dailyReports).join([
+      innerJoin(
+        _db.dailyPlans,
+        _db.dailyPlans.id.equalsExp(_db.dailyReports.dailyPlanId),
+      ),
+    ])..orderBy([OrderingTerm.asc(_db.dailyPlans.date)]);
+
+    if (since != null) {
+      final sinceDay = DateTime(since.year, since.month, since.day);
+      query.where(_db.dailyPlans.date.isBiggerOrEqualValue(sinceDay));
+    }
+
+    final rows = await query.get();
+    return rows.map((row) {
+      final report = row.readTable(_db.dailyReports);
+      final plan = row.readTable(_db.dailyPlans);
+      return TrendPoint(date: plan.date, completionRate: report.completionRate);
+    }).toList();
   }
 }

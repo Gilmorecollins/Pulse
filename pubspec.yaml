@@ -65,6 +65,14 @@ dependencies:
   # via the wa.me deep link (see docs/API.md); no Business API needed.
   url_launcher: ^6.3.1
 
+  # Google Drive backup/restore — see docs/ARCHITECTURE.md's "Backup"
+  # section. google_sign_in handles auth; googleapis is the Drive API v3
+  # client; the extension bridges google_sign_in's auth headers into an
+  # http.Client googleapis can use.
+  google_sign_in: ^6.2.2
+  googleapis: ^13.2.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.12
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -78,6 +86,14 @@ dev_dependencies:
 
   build_runner: ^2.4.13
   drift_dev: ^2.22.1
+  flutter_launcher_icons: ^0.14.3
+
+# App icon — see docs/PRODUCT.md/README.md; regenerate with
+# `dart run flutter_launcher_icons` after changing assets/icon/icon.png.
+flutter_launcher_icons:
+  android: true
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

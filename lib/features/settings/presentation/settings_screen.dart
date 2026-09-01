@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../core/notifications/notification_provider.dart';
 import '../../../core/preferences/preferences_provider.dart';
+import '../../backup/presentation/backup_card.dart';
+import '../../backup/presentation/backup_providers.dart';
 import '../../checkin/presentation/checkin_providers.dart';
 import '../../checkin/presentation/checkin_scheduling.dart';
 import '../../today/presentation/today_providers.dart';
@@ -14,10 +16,13 @@ import '../../today/presentation/today_providers.dart';
 /// Styled after the user's own settings mockup (rounded profile card,
 /// gray section labels, icon + label + trailing control/value row
 /// pattern) — but only the rows that map to something Pulse actually
-/// has. The mockup's account/email, "PRO" badge, cloud sync, and
-/// language/region rows are dropped rather than shipped as decoration:
-/// Pulse has no accounts, no backend, no subscription, and no i18n (see
-/// docs/PRODUCT.md — never imply a capability that doesn't exist).
+/// has. The mockup's account/email, "PRO" badge, and language/region
+/// rows are dropped rather than shipped as decoration: Pulse has no
+/// subscription and no i18n (see docs/PRODUCT.md — never imply a
+/// capability that doesn't exist). "Cloud sync" is the one row the
+/// mockup had that Pulse eventually did add for real — see the Backup
+/// section — but scoped to the user's own Google Drive App Data folder
+/// for backup/restore, never a Pulse-owned account or backend.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -34,6 +39,10 @@ class SettingsScreen extends ConsumerWidget {
             _SectionLabel('Preferences'),
             SizedBox(height: 8),
             _PreferencesCard(),
+            SizedBox(height: 28),
+            _SectionLabel('Backup'),
+            SizedBox(height: 8),
+            BackupCard(),
             SizedBox(height: 28),
             _SectionLabel('General'),
             SizedBox(height: 8),
@@ -459,11 +468,22 @@ class _AboutRow extends StatelessWidget {
   }
 }
 
-class _PrivacyCard extends StatelessWidget {
+class _PrivacyCard extends ConsumerWidget {
   const _PrivacyCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final connected = ref.watch(driveAccountProvider).valueOrNull != null;
+    final text = connected
+        ? 'Everything lives on this device by default. The only thing '
+              'that leaves it is a backup you trigger yourself, sent to '
+              'your own Google Drive — Pulse has no accounts or backend '
+              'of its own, and nothing else is shared unless you choose '
+              'to send a report.'
+        : 'Everything stays on this device — no accounts, no cloud, '
+              'nothing sent anywhere except when you choose to share a '
+              'report or turn on Drive backup.';
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -476,12 +496,7 @@ class _PrivacyCard extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                'Everything stays on this device — no accounts, no cloud, '
-                'nothing sent anywhere except when you choose to share a '
-                'report.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
             ),
           ],
         ),

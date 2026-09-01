@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/database.dart';
+import '../../../core/models/task_enums.dart';
 import '../../../core/notifications/notification_provider.dart';
 import '../../checkin/presentation/checkin_providers.dart';
 import '../../checkin/presentation/checkin_scheduling.dart';
+import '../../recurrence/presentation/recurrence_providers.dart';
 import 'today_providers.dart';
+
+const _weekdayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -42,6 +46,11 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
   late TimeOfDay? _finishTime = _timeOfDayFrom(
     widget.existingTask?.expectedCompletionTime,
   );
+  // Add-mode only — v1 scope trim: a task already part of a series is
+  // never converted, and edit mode never sets these (see the "Part of a
+  // repeating series" banner below instead).
+  RecurrenceFrequency? _repeatFrequency;
+  final Set<int> _repeatWeekdays = {};
   bool _busy = false;
 
   bool get _isEditing => widget.existingTask != null;
@@ -110,6 +119,31 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
           dailyPlanId: plan.id,
           completionTime: completionTime,
         );
+      }
+    } else if (_repeatFrequency != null) {
+      final result = await ref
+          .read(recurrenceRepositoryProvider)
+          .createRule(
+            title: title,
+            description: description,
+            frequency: _repeatFrequency!,
+            daysOfWeek: _repeatFrequency == RecurrenceFrequency.weekly
+                ? _repeatWeekdays.toList()
+                : const [],
+            startDate: _day,
+            expectedCompletionTime: _finishTime,
+          );
+      for (final occurrence in result.occurrences) {
+        final occurrenceTime = occurrence.expectedCompletionTime;
+        if (occurrenceTime != null) {
+          await scheduleTaskCheckIn(
+            ref,
+            taskId: occurrence.id,
+            taskTitle: occurrence.title,
+            dailyPlanId: occurrence.dailyPlanId,
+            completionTime: occurrenceTime,
+          );
+        }
       }
     } else {
       final plan = await repo.getOrCreatePlanForDate(_day);
@@ -207,6 +241,45 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
               ),
             ],
           ),
+          if (!_isEditing) ...[
+            const SizedBox(height: 12),
+            _RepeatPicker(
+              frequency: _repeatFrequency,
+              weekdays: _repeatWeekdays,
+              enabled: !_busy,
+              onFrequencyChanged: (freq) =>
+                  setState(() => _repeatFrequency = freq),
+              onWeekdayToggled: (day, selected) => setState(() {
+                if (selected) {
+                  _repeatWeekdays.add(day);
+                } else {
+                  _repeatWeekdays.remove(day);
+                }
+              }),
+            ),
+          ] else if (widget.existingTask!.recurrenceRuleId != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.repeat,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Part of a repeating series — this only edits today\'s '
+                    'occurrence',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _busy ? null : _submit,
@@ -220,6 +293,74 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// None / Daily / Weekdays choice, with a weekday multi-select revealed
+/// only for Weekdays. Add-mode only — see AddEditTaskSheet's v1 scope
+/// trim on editing a series.
+class _RepeatPicker extends StatelessWidget {
+  const _RepeatPicker({
+    required this.frequency,
+    required this.weekdays,
+    required this.enabled,
+    required this.onFrequencyChanged,
+    required this.onWeekdayToggled,
+  });
+
+  final RecurrenceFrequency? frequency;
+  final Set<int> weekdays;
+  final bool enabled;
+  final ValueChanged<RecurrenceFrequency?> onFrequencyChanged;
+  final void Function(int weekday, bool selected) onWeekdayToggled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          children: [
+            ChoiceChip(
+              label: const Text('Once'),
+              selected: frequency == null,
+              onSelected: enabled ? (_) => onFrequencyChanged(null) : null,
+            ),
+            ChoiceChip(
+              label: const Text('Daily'),
+              selected: frequency == RecurrenceFrequency.daily,
+              onSelected: enabled
+                  ? (_) => onFrequencyChanged(RecurrenceFrequency.daily)
+                  : null,
+            ),
+            ChoiceChip(
+              label: const Text('Weekdays'),
+              selected: frequency == RecurrenceFrequency.weekly,
+              onSelected: enabled
+                  ? (_) => onFrequencyChanged(RecurrenceFrequency.weekly)
+                  : null,
+            ),
+          ],
+        ),
+        if (frequency == RecurrenceFrequency.weekly) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 4,
+            children: List.generate(7, (i) {
+              final weekday = i + 1; // 1 = Monday .. 7 = Sunday
+              return FilterChip(
+                label: Text(_weekdayLabels[i]),
+                selected: weekdays.contains(weekday),
+                onSelected: enabled
+                    ? (selected) => onWeekdayToggled(weekday, selected)
+                    : null,
+              );
+            }),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -416,6 +416,17 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _recurrenceRuleIdMeta = const VerificationMeta(
+    'recurrenceRuleId',
+  );
+  @override
+  late final GeneratedColumn<String> recurrenceRuleId = GeneratedColumn<String>(
+    'recurrence_rule_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -432,6 +443,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     source,
     expectedCompletionTime,
     explanationNote,
+    recurrenceRuleId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -557,6 +569,15 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         ),
       );
     }
+    if (data.containsKey('recurrence_rule_id')) {
+      context.handle(
+        _recurrenceRuleIdMeta,
+        recurrenceRuleId.isAcceptableOrUnknown(
+          data['recurrence_rule_id']!,
+          _recurrenceRuleIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -622,6 +643,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         DriftSqlType.string,
         data['${effectivePrefix}explanation_note'],
       ),
+      recurrenceRuleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recurrence_rule_id'],
+      ),
     );
   }
 
@@ -646,6 +671,7 @@ class Task extends DataClass implements Insertable<Task> {
   final String source;
   final DateTime? expectedCompletionTime;
   final String? explanationNote;
+  final String? recurrenceRuleId;
   const Task({
     required this.id,
     required this.dailyPlanId,
@@ -661,6 +687,7 @@ class Task extends DataClass implements Insertable<Task> {
     required this.source,
     this.expectedCompletionTime,
     this.explanationNote,
+    this.recurrenceRuleId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -693,6 +720,9 @@ class Task extends DataClass implements Insertable<Task> {
     if (!nullToAbsent || explanationNote != null) {
       map['explanation_note'] = Variable<String>(explanationNote);
     }
+    if (!nullToAbsent || recurrenceRuleId != null) {
+      map['recurrence_rule_id'] = Variable<String>(recurrenceRuleId);
+    }
     return map;
   }
 
@@ -724,6 +754,9 @@ class Task extends DataClass implements Insertable<Task> {
       explanationNote: explanationNote == null && nullToAbsent
           ? const Value.absent()
           : Value(explanationNote),
+      recurrenceRuleId: recurrenceRuleId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recurrenceRuleId),
     );
   }
 
@@ -749,6 +782,7 @@ class Task extends DataClass implements Insertable<Task> {
         json['expectedCompletionTime'],
       ),
       explanationNote: serializer.fromJson<String?>(json['explanationNote']),
+      recurrenceRuleId: serializer.fromJson<String?>(json['recurrenceRuleId']),
     );
   }
   @override
@@ -771,6 +805,7 @@ class Task extends DataClass implements Insertable<Task> {
         expectedCompletionTime,
       ),
       'explanationNote': serializer.toJson<String?>(explanationNote),
+      'recurrenceRuleId': serializer.toJson<String?>(recurrenceRuleId),
     };
   }
 
@@ -789,6 +824,7 @@ class Task extends DataClass implements Insertable<Task> {
     String? source,
     Value<DateTime?> expectedCompletionTime = const Value.absent(),
     Value<String?> explanationNote = const Value.absent(),
+    Value<String?> recurrenceRuleId = const Value.absent(),
   }) => Task(
     id: id ?? this.id,
     dailyPlanId: dailyPlanId ?? this.dailyPlanId,
@@ -812,6 +848,9 @@ class Task extends DataClass implements Insertable<Task> {
     explanationNote: explanationNote.present
         ? explanationNote.value
         : this.explanationNote,
+    recurrenceRuleId: recurrenceRuleId.present
+        ? recurrenceRuleId.value
+        : this.recurrenceRuleId,
   );
   Task copyWithCompanion(TasksCompanion data) {
     return Task(
@@ -845,6 +884,9 @@ class Task extends DataClass implements Insertable<Task> {
       explanationNote: data.explanationNote.present
           ? data.explanationNote.value
           : this.explanationNote,
+      recurrenceRuleId: data.recurrenceRuleId.present
+          ? data.recurrenceRuleId.value
+          : this.recurrenceRuleId,
     );
   }
 
@@ -864,7 +906,8 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('actualDuration: $actualDuration, ')
           ..write('source: $source, ')
           ..write('expectedCompletionTime: $expectedCompletionTime, ')
-          ..write('explanationNote: $explanationNote')
+          ..write('explanationNote: $explanationNote, ')
+          ..write('recurrenceRuleId: $recurrenceRuleId')
           ..write(')'))
         .toString();
   }
@@ -885,6 +928,7 @@ class Task extends DataClass implements Insertable<Task> {
     source,
     expectedCompletionTime,
     explanationNote,
+    recurrenceRuleId,
   );
   @override
   bool operator ==(Object other) =>
@@ -903,7 +947,8 @@ class Task extends DataClass implements Insertable<Task> {
           other.actualDuration == this.actualDuration &&
           other.source == this.source &&
           other.expectedCompletionTime == this.expectedCompletionTime &&
-          other.explanationNote == this.explanationNote);
+          other.explanationNote == this.explanationNote &&
+          other.recurrenceRuleId == this.recurrenceRuleId);
 }
 
 class TasksCompanion extends UpdateCompanion<Task> {
@@ -921,6 +966,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<String> source;
   final Value<DateTime?> expectedCompletionTime;
   final Value<String?> explanationNote;
+  final Value<String?> recurrenceRuleId;
   final Value<int> rowid;
   const TasksCompanion({
     this.id = const Value.absent(),
@@ -937,6 +983,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.source = const Value.absent(),
     this.expectedCompletionTime = const Value.absent(),
     this.explanationNote = const Value.absent(),
+    this.recurrenceRuleId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TasksCompanion.insert({
@@ -954,6 +1001,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.source = const Value.absent(),
     this.expectedCompletionTime = const Value.absent(),
     this.explanationNote = const Value.absent(),
+    this.recurrenceRuleId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        dailyPlanId = Value(dailyPlanId),
@@ -975,6 +1023,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Expression<String>? source,
     Expression<DateTime>? expectedCompletionTime,
     Expression<String>? explanationNote,
+    Expression<String>? recurrenceRuleId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -993,6 +1042,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       if (expectedCompletionTime != null)
         'expected_completion_time': expectedCompletionTime,
       if (explanationNote != null) 'explanation_note': explanationNote,
+      if (recurrenceRuleId != null) 'recurrence_rule_id': recurrenceRuleId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1012,6 +1062,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Value<String>? source,
     Value<DateTime?>? expectedCompletionTime,
     Value<String?>? explanationNote,
+    Value<String?>? recurrenceRuleId,
     Value<int>? rowid,
   }) {
     return TasksCompanion(
@@ -1030,6 +1081,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       expectedCompletionTime:
           expectedCompletionTime ?? this.expectedCompletionTime,
       explanationNote: explanationNote ?? this.explanationNote,
+      recurrenceRuleId: recurrenceRuleId ?? this.recurrenceRuleId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1081,6 +1133,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
     if (explanationNote.present) {
       map['explanation_note'] = Variable<String>(explanationNote.value);
     }
+    if (recurrenceRuleId.present) {
+      map['recurrence_rule_id'] = Variable<String>(recurrenceRuleId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1104,6 +1159,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
           ..write('source: $source, ')
           ..write('expectedCompletionTime: $expectedCompletionTime, ')
           ..write('explanationNote: $explanationNote, ')
+          ..write('recurrenceRuleId: $recurrenceRuleId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2335,6 +2391,652 @@ class DailyReportsCompanion extends UpdateCompanion<DailyReport> {
   }
 }
 
+class $RecurrenceRulesTable extends RecurrenceRules
+    with TableInfo<$RecurrenceRulesTable, RecurrenceRule> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecurrenceRulesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _frequencyMeta = const VerificationMeta(
+    'frequency',
+  );
+  @override
+  late final GeneratedColumn<String> frequency = GeneratedColumn<String>(
+    'frequency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _daysOfWeekMeta = const VerificationMeta(
+    'daysOfWeek',
+  );
+  @override
+  late final GeneratedColumn<String> daysOfWeek = GeneratedColumn<String>(
+    'days_of_week',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+    'start_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endDateMeta = const VerificationMeta(
+    'endDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+    'end_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _estimatedDurationMeta = const VerificationMeta(
+    'estimatedDuration',
+  );
+  @override
+  late final GeneratedColumn<int> estimatedDuration = GeneratedColumn<int>(
+    'estimated_duration',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _expectedCompletionMinutesMeta =
+      const VerificationMeta('expectedCompletionMinutes');
+  @override
+  late final GeneratedColumn<int> expectedCompletionMinutes =
+      GeneratedColumn<int>(
+        'expected_completion_minutes',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    description,
+    frequency,
+    daysOfWeek,
+    startDate,
+    endDate,
+    estimatedDuration,
+    expectedCompletionMinutes,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'recurrence_rules';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RecurrenceRule> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('frequency')) {
+      context.handle(
+        _frequencyMeta,
+        frequency.isAcceptableOrUnknown(data['frequency']!, _frequencyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_frequencyMeta);
+    }
+    if (data.containsKey('days_of_week')) {
+      context.handle(
+        _daysOfWeekMeta,
+        daysOfWeek.isAcceptableOrUnknown(
+          data['days_of_week']!,
+          _daysOfWeekMeta,
+        ),
+      );
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(
+        _endDateMeta,
+        endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta),
+      );
+    }
+    if (data.containsKey('estimated_duration')) {
+      context.handle(
+        _estimatedDurationMeta,
+        estimatedDuration.isAcceptableOrUnknown(
+          data['estimated_duration']!,
+          _estimatedDurationMeta,
+        ),
+      );
+    }
+    if (data.containsKey('expected_completion_minutes')) {
+      context.handle(
+        _expectedCompletionMinutesMeta,
+        expectedCompletionMinutes.isAcceptableOrUnknown(
+          data['expected_completion_minutes']!,
+          _expectedCompletionMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RecurrenceRule map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RecurrenceRule(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      frequency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}frequency'],
+      )!,
+      daysOfWeek: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}days_of_week'],
+      ),
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_date'],
+      )!,
+      endDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}end_date'],
+      ),
+      estimatedDuration: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}estimated_duration'],
+      ),
+      expectedCompletionMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}expected_completion_minutes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RecurrenceRulesTable createAlias(String alias) {
+    return $RecurrenceRulesTable(attachedDatabase, alias);
+  }
+}
+
+class RecurrenceRule extends DataClass implements Insertable<RecurrenceRule> {
+  final String id;
+  final String title;
+  final String? description;
+  final String frequency;
+  final String? daysOfWeek;
+  final DateTime startDate;
+  final DateTime? endDate;
+  final int? estimatedDuration;
+  final int? expectedCompletionMinutes;
+  final DateTime createdAt;
+  const RecurrenceRule({
+    required this.id,
+    required this.title,
+    this.description,
+    required this.frequency,
+    this.daysOfWeek,
+    required this.startDate,
+    this.endDate,
+    this.estimatedDuration,
+    this.expectedCompletionMinutes,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['frequency'] = Variable<String>(frequency);
+    if (!nullToAbsent || daysOfWeek != null) {
+      map['days_of_week'] = Variable<String>(daysOfWeek);
+    }
+    map['start_date'] = Variable<DateTime>(startDate);
+    if (!nullToAbsent || endDate != null) {
+      map['end_date'] = Variable<DateTime>(endDate);
+    }
+    if (!nullToAbsent || estimatedDuration != null) {
+      map['estimated_duration'] = Variable<int>(estimatedDuration);
+    }
+    if (!nullToAbsent || expectedCompletionMinutes != null) {
+      map['expected_completion_minutes'] = Variable<int>(
+        expectedCompletionMinutes,
+      );
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  RecurrenceRulesCompanion toCompanion(bool nullToAbsent) {
+    return RecurrenceRulesCompanion(
+      id: Value(id),
+      title: Value(title),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      frequency: Value(frequency),
+      daysOfWeek: daysOfWeek == null && nullToAbsent
+          ? const Value.absent()
+          : Value(daysOfWeek),
+      startDate: Value(startDate),
+      endDate: endDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endDate),
+      estimatedDuration: estimatedDuration == null && nullToAbsent
+          ? const Value.absent()
+          : Value(estimatedDuration),
+      expectedCompletionMinutes:
+          expectedCompletionMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expectedCompletionMinutes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory RecurrenceRule.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RecurrenceRule(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String?>(json['description']),
+      frequency: serializer.fromJson<String>(json['frequency']),
+      daysOfWeek: serializer.fromJson<String?>(json['daysOfWeek']),
+      startDate: serializer.fromJson<DateTime>(json['startDate']),
+      endDate: serializer.fromJson<DateTime?>(json['endDate']),
+      estimatedDuration: serializer.fromJson<int?>(json['estimatedDuration']),
+      expectedCompletionMinutes: serializer.fromJson<int?>(
+        json['expectedCompletionMinutes'],
+      ),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String?>(description),
+      'frequency': serializer.toJson<String>(frequency),
+      'daysOfWeek': serializer.toJson<String?>(daysOfWeek),
+      'startDate': serializer.toJson<DateTime>(startDate),
+      'endDate': serializer.toJson<DateTime?>(endDate),
+      'estimatedDuration': serializer.toJson<int?>(estimatedDuration),
+      'expectedCompletionMinutes': serializer.toJson<int?>(
+        expectedCompletionMinutes,
+      ),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  RecurrenceRule copyWith({
+    String? id,
+    String? title,
+    Value<String?> description = const Value.absent(),
+    String? frequency,
+    Value<String?> daysOfWeek = const Value.absent(),
+    DateTime? startDate,
+    Value<DateTime?> endDate = const Value.absent(),
+    Value<int?> estimatedDuration = const Value.absent(),
+    Value<int?> expectedCompletionMinutes = const Value.absent(),
+    DateTime? createdAt,
+  }) => RecurrenceRule(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    description: description.present ? description.value : this.description,
+    frequency: frequency ?? this.frequency,
+    daysOfWeek: daysOfWeek.present ? daysOfWeek.value : this.daysOfWeek,
+    startDate: startDate ?? this.startDate,
+    endDate: endDate.present ? endDate.value : this.endDate,
+    estimatedDuration: estimatedDuration.present
+        ? estimatedDuration.value
+        : this.estimatedDuration,
+    expectedCompletionMinutes: expectedCompletionMinutes.present
+        ? expectedCompletionMinutes.value
+        : this.expectedCompletionMinutes,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  RecurrenceRule copyWithCompanion(RecurrenceRulesCompanion data) {
+    return RecurrenceRule(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      frequency: data.frequency.present ? data.frequency.value : this.frequency,
+      daysOfWeek: data.daysOfWeek.present
+          ? data.daysOfWeek.value
+          : this.daysOfWeek,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
+      estimatedDuration: data.estimatedDuration.present
+          ? data.estimatedDuration.value
+          : this.estimatedDuration,
+      expectedCompletionMinutes: data.expectedCompletionMinutes.present
+          ? data.expectedCompletionMinutes.value
+          : this.expectedCompletionMinutes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecurrenceRule(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('frequency: $frequency, ')
+          ..write('daysOfWeek: $daysOfWeek, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('estimatedDuration: $estimatedDuration, ')
+          ..write('expectedCompletionMinutes: $expectedCompletionMinutes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    description,
+    frequency,
+    daysOfWeek,
+    startDate,
+    endDate,
+    estimatedDuration,
+    expectedCompletionMinutes,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RecurrenceRule &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.frequency == this.frequency &&
+          other.daysOfWeek == this.daysOfWeek &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.estimatedDuration == this.estimatedDuration &&
+          other.expectedCompletionMinutes == this.expectedCompletionMinutes &&
+          other.createdAt == this.createdAt);
+}
+
+class RecurrenceRulesCompanion extends UpdateCompanion<RecurrenceRule> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String?> description;
+  final Value<String> frequency;
+  final Value<String?> daysOfWeek;
+  final Value<DateTime> startDate;
+  final Value<DateTime?> endDate;
+  final Value<int?> estimatedDuration;
+  final Value<int?> expectedCompletionMinutes;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const RecurrenceRulesCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.frequency = const Value.absent(),
+    this.daysOfWeek = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.estimatedDuration = const Value.absent(),
+    this.expectedCompletionMinutes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RecurrenceRulesCompanion.insert({
+    required String id,
+    required String title,
+    this.description = const Value.absent(),
+    required String frequency,
+    this.daysOfWeek = const Value.absent(),
+    required DateTime startDate,
+    this.endDate = const Value.absent(),
+    this.estimatedDuration = const Value.absent(),
+    this.expectedCompletionMinutes = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       frequency = Value(frequency),
+       startDate = Value(startDate),
+       createdAt = Value(createdAt);
+  static Insertable<RecurrenceRule> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<String>? frequency,
+    Expression<String>? daysOfWeek,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
+    Expression<int>? estimatedDuration,
+    Expression<int>? expectedCompletionMinutes,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (frequency != null) 'frequency': frequency,
+      if (daysOfWeek != null) 'days_of_week': daysOfWeek,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (estimatedDuration != null) 'estimated_duration': estimatedDuration,
+      if (expectedCompletionMinutes != null)
+        'expected_completion_minutes': expectedCompletionMinutes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RecurrenceRulesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String?>? description,
+    Value<String>? frequency,
+    Value<String?>? daysOfWeek,
+    Value<DateTime>? startDate,
+    Value<DateTime?>? endDate,
+    Value<int?>? estimatedDuration,
+    Value<int?>? expectedCompletionMinutes,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return RecurrenceRulesCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      frequency: frequency ?? this.frequency,
+      daysOfWeek: daysOfWeek ?? this.daysOfWeek,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      estimatedDuration: estimatedDuration ?? this.estimatedDuration,
+      expectedCompletionMinutes:
+          expectedCompletionMinutes ?? this.expectedCompletionMinutes,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (frequency.present) {
+      map['frequency'] = Variable<String>(frequency.value);
+    }
+    if (daysOfWeek.present) {
+      map['days_of_week'] = Variable<String>(daysOfWeek.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
+    if (estimatedDuration.present) {
+      map['estimated_duration'] = Variable<int>(estimatedDuration.value);
+    }
+    if (expectedCompletionMinutes.present) {
+      map['expected_completion_minutes'] = Variable<int>(
+        expectedCompletionMinutes.value,
+      );
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecurrenceRulesCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('frequency: $frequency, ')
+          ..write('daysOfWeek: $daysOfWeek, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('estimatedDuration: $estimatedDuration, ')
+          ..write('expectedCompletionMinutes: $expectedCompletionMinutes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$PulseDatabase extends GeneratedDatabase {
   _$PulseDatabase(QueryExecutor e) : super(e);
   $PulseDatabaseManager get managers => $PulseDatabaseManager(this);
@@ -2345,6 +3047,9 @@ abstract class _$PulseDatabase extends GeneratedDatabase {
     this,
   );
   late final $DailyReportsTable dailyReports = $DailyReportsTable(this);
+  late final $RecurrenceRulesTable recurrenceRules = $RecurrenceRulesTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2355,6 +3060,7 @@ abstract class _$PulseDatabase extends GeneratedDatabase {
     checkIns,
     dailyReflections,
     dailyReports,
+    recurrenceRules,
   ];
 }
 
@@ -2533,6 +3239,7 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<String> source,
       Value<DateTime?> expectedCompletionTime,
       Value<String?> explanationNote,
+      Value<String?> recurrenceRuleId,
       Value<int> rowid,
     });
 typedef $$TasksTableUpdateCompanionBuilder =
@@ -2551,6 +3258,7 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<String> source,
       Value<DateTime?> expectedCompletionTime,
       Value<String?> explanationNote,
+      Value<String?> recurrenceRuleId,
       Value<int> rowid,
     });
 
@@ -2630,6 +3338,11 @@ class $$TasksTableFilterComposer
 
   ColumnFilters<String> get explanationNote => $composableBuilder(
     column: $table.explanationNote,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recurrenceRuleId => $composableBuilder(
+    column: $table.recurrenceRuleId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2712,6 +3425,11 @@ class $$TasksTableOrderingComposer
     column: $table.explanationNote,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get recurrenceRuleId => $composableBuilder(
+    column: $table.recurrenceRuleId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TasksTableAnnotationComposer
@@ -2780,6 +3498,11 @@ class $$TasksTableAnnotationComposer
     column: $table.explanationNote,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get recurrenceRuleId => $composableBuilder(
+    column: $table.recurrenceRuleId,
+    builder: (column) => column,
+  );
 }
 
 class $$TasksTableTableManager
@@ -2824,6 +3547,7 @@ class $$TasksTableTableManager
                 Value<String> source = const Value.absent(),
                 Value<DateTime?> expectedCompletionTime = const Value.absent(),
                 Value<String?> explanationNote = const Value.absent(),
+                Value<String?> recurrenceRuleId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TasksCompanion(
                 id: id,
@@ -2840,6 +3564,7 @@ class $$TasksTableTableManager
                 source: source,
                 expectedCompletionTime: expectedCompletionTime,
                 explanationNote: explanationNote,
+                recurrenceRuleId: recurrenceRuleId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2858,6 +3583,7 @@ class $$TasksTableTableManager
                 Value<String> source = const Value.absent(),
                 Value<DateTime?> expectedCompletionTime = const Value.absent(),
                 Value<String?> explanationNote = const Value.absent(),
+                Value<String?> recurrenceRuleId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TasksCompanion.insert(
                 id: id,
@@ -2874,6 +3600,7 @@ class $$TasksTableTableManager
                 source: source,
                 expectedCompletionTime: expectedCompletionTime,
                 explanationNote: explanationNote,
+                recurrenceRuleId: recurrenceRuleId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3558,6 +4285,315 @@ typedef $$DailyReportsTableProcessedTableManager =
       DailyReport,
       PrefetchHooks Function()
     >;
+typedef $$RecurrenceRulesTableCreateCompanionBuilder =
+    RecurrenceRulesCompanion Function({
+      required String id,
+      required String title,
+      Value<String?> description,
+      required String frequency,
+      Value<String?> daysOfWeek,
+      required DateTime startDate,
+      Value<DateTime?> endDate,
+      Value<int?> estimatedDuration,
+      Value<int?> expectedCompletionMinutes,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$RecurrenceRulesTableUpdateCompanionBuilder =
+    RecurrenceRulesCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String?> description,
+      Value<String> frequency,
+      Value<String?> daysOfWeek,
+      Value<DateTime> startDate,
+      Value<DateTime?> endDate,
+      Value<int?> estimatedDuration,
+      Value<int?> expectedCompletionMinutes,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$RecurrenceRulesTableFilterComposer
+    extends Composer<_$PulseDatabase, $RecurrenceRulesTable> {
+  $$RecurrenceRulesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get frequency => $composableBuilder(
+    column: $table.frequency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get daysOfWeek => $composableBuilder(
+    column: $table.daysOfWeek,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get estimatedDuration => $composableBuilder(
+    column: $table.estimatedDuration,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get expectedCompletionMinutes => $composableBuilder(
+    column: $table.expectedCompletionMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$RecurrenceRulesTableOrderingComposer
+    extends Composer<_$PulseDatabase, $RecurrenceRulesTable> {
+  $$RecurrenceRulesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get frequency => $composableBuilder(
+    column: $table.frequency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get daysOfWeek => $composableBuilder(
+    column: $table.daysOfWeek,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get estimatedDuration => $composableBuilder(
+    column: $table.estimatedDuration,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get expectedCompletionMinutes => $composableBuilder(
+    column: $table.expectedCompletionMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$RecurrenceRulesTableAnnotationComposer
+    extends Composer<_$PulseDatabase, $RecurrenceRulesTable> {
+  $$RecurrenceRulesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get frequency =>
+      $composableBuilder(column: $table.frequency, builder: (column) => column);
+
+  GeneratedColumn<String> get daysOfWeek => $composableBuilder(
+    column: $table.daysOfWeek,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
+  GeneratedColumn<int> get estimatedDuration => $composableBuilder(
+    column: $table.estimatedDuration,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get expectedCompletionMinutes => $composableBuilder(
+    column: $table.expectedCompletionMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$RecurrenceRulesTableTableManager
+    extends
+        RootTableManager<
+          _$PulseDatabase,
+          $RecurrenceRulesTable,
+          RecurrenceRule,
+          $$RecurrenceRulesTableFilterComposer,
+          $$RecurrenceRulesTableOrderingComposer,
+          $$RecurrenceRulesTableAnnotationComposer,
+          $$RecurrenceRulesTableCreateCompanionBuilder,
+          $$RecurrenceRulesTableUpdateCompanionBuilder,
+          (
+            RecurrenceRule,
+            BaseReferences<
+              _$PulseDatabase,
+              $RecurrenceRulesTable,
+              RecurrenceRule
+            >,
+          ),
+          RecurrenceRule,
+          PrefetchHooks Function()
+        > {
+  $$RecurrenceRulesTableTableManager(
+    _$PulseDatabase db,
+    $RecurrenceRulesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RecurrenceRulesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RecurrenceRulesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RecurrenceRulesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<String> frequency = const Value.absent(),
+                Value<String?> daysOfWeek = const Value.absent(),
+                Value<DateTime> startDate = const Value.absent(),
+                Value<DateTime?> endDate = const Value.absent(),
+                Value<int?> estimatedDuration = const Value.absent(),
+                Value<int?> expectedCompletionMinutes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecurrenceRulesCompanion(
+                id: id,
+                title: title,
+                description: description,
+                frequency: frequency,
+                daysOfWeek: daysOfWeek,
+                startDate: startDate,
+                endDate: endDate,
+                estimatedDuration: estimatedDuration,
+                expectedCompletionMinutes: expectedCompletionMinutes,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<String?> description = const Value.absent(),
+                required String frequency,
+                Value<String?> daysOfWeek = const Value.absent(),
+                required DateTime startDate,
+                Value<DateTime?> endDate = const Value.absent(),
+                Value<int?> estimatedDuration = const Value.absent(),
+                Value<int?> expectedCompletionMinutes = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => RecurrenceRulesCompanion.insert(
+                id: id,
+                title: title,
+                description: description,
+                frequency: frequency,
+                daysOfWeek: daysOfWeek,
+                startDate: startDate,
+                endDate: endDate,
+                estimatedDuration: estimatedDuration,
+                expectedCompletionMinutes: expectedCompletionMinutes,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$RecurrenceRulesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PulseDatabase,
+      $RecurrenceRulesTable,
+      RecurrenceRule,
+      $$RecurrenceRulesTableFilterComposer,
+      $$RecurrenceRulesTableOrderingComposer,
+      $$RecurrenceRulesTableAnnotationComposer,
+      $$RecurrenceRulesTableCreateCompanionBuilder,
+      $$RecurrenceRulesTableUpdateCompanionBuilder,
+      (
+        RecurrenceRule,
+        BaseReferences<_$PulseDatabase, $RecurrenceRulesTable, RecurrenceRule>,
+      ),
+      RecurrenceRule,
+      PrefetchHooks Function()
+    >;
 
 class $PulseDatabaseManager {
   final _$PulseDatabase _db;
@@ -3572,4 +4608,6 @@ class $PulseDatabaseManager {
       $$DailyReflectionsTableTableManager(_db, _db.dailyReflections);
   $$DailyReportsTableTableManager get dailyReports =>
       $$DailyReportsTableTableManager(_db, _db.dailyReports);
+  $$RecurrenceRulesTableTableManager get recurrenceRules =>
+      $$RecurrenceRulesTableTableManager(_db, _db.recurrenceRules);
 }

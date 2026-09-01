@@ -62,3 +62,16 @@ enum TaskSource {
         TaskSource.aiSuggested => 'ai_suggested',
       };
 }
+
+enum RecurrenceFrequency {
+  daily,
+  weekly;
+
+  static RecurrenceFrequency fromDb(String value) => switch (value) {
+        'daily' => RecurrenceFrequency.daily,
+        'weekly' => RecurrenceFrequency.weekly,
+        _ => throw ArgumentError('Unknown recurrence frequency: $value'),
+      };
+
+  String toDb() => name;
+}

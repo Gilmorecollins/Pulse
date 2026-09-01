@@ -20,3 +20,10 @@ final themeModeProvider = StateProvider<ThemeMode>((ref) {
     'themeModeProvider must be overridden in main() with the stored theme.',
   );
 });
+
+/// When the last successful Drive backup/restore completed, or null.
+/// Invalidated by _BackupCard after a backup/restore so it reflects the
+/// new timestamp without a full Settings screen rebuild.
+final lastSyncedAtProvider = FutureProvider<DateTime?>((ref) {
+  return ref.watch(preferencesRepositoryProvider).getLastSyncedAt();
+});

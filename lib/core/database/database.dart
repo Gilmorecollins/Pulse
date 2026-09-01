@@ -44,6 +44,38 @@ class Tasks extends Table {
   // action. Cleared when transferred to a new day (fresh start); left in
   // place when the task is ended, so it carries through to the report.
   TextColumn get explanationNote => text().nullable()();
+  // Set only on a task materialized from a RecurrenceRule occurrence.
+  // onDelete: setNull (not cascade) — deleting a rule stops future
+  // occurrences but never deletes history; see RecurrenceRepository.
+  TextColumn get recurrenceRuleId => text()
+      .nullable()
+      .references(RecurrenceRules, #id, onDelete: KeyAction.setNull)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// A repeat rule a task can be generated from — see
+/// RecurrenceRepository. Occurrences are materialized lazily (on app
+/// open, not a batch job) as ordinary Tasks rows tagged with this rule's
+/// id, so every existing feature (Today/Week/Report/Insights) handles
+/// them for free without knowing recurrence exists.
+class RecurrenceRules extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text()();
+  TextColumn get description => text().nullable()();
+  // 'daily' | 'weekly'
+  TextColumn get frequency => text()();
+  // Comma-separated ISO weekdays ("1,3,5"), null when frequency is daily.
+  TextColumn get daysOfWeek => text().nullable()();
+  DateTimeColumn get startDate => dateTime()(); // date-only
+  DateTimeColumn get endDate => dateTime().nullable()(); // date-only, inclusive; null = indefinite
+  IntColumn get estimatedDuration => integer().nullable()();
+  // Minutes since midnight — the expected-finish time each occurrence is
+  // given, mirroring Tasks.expectedCompletionTime's role. Null means
+  // occurrences get no check-in.
+  IntColumn get expectedCompletionMinutes => integer().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -101,7 +133,14 @@ class DailyReports extends Table {
 }
 
 @DriftDatabase(
-  tables: [DailyPlans, Tasks, CheckIns, DailyReflections, DailyReports],
+  tables: [
+    DailyPlans,
+    Tasks,
+    CheckIns,
+    DailyReflections,
+    DailyReports,
+    RecurrenceRules,
+  ],
 )
 class PulseDatabase extends _$PulseDatabase {
   PulseDatabase() : super(_openConnection());
@@ -109,7 +148,7 @@ class PulseDatabase extends _$PulseDatabase {
   PulseDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -122,6 +161,10 @@ class PulseDatabase extends _$PulseDatabase {
           }
           if (from < 3) {
             await m.addColumn(tasks, tasks.explanationNote);
+          }
+          if (from < 4) {
+            await m.createTable(recurrenceRules);
+            await m.addColumn(tasks, tasks.recurrenceRuleId);
           }
         },
       );

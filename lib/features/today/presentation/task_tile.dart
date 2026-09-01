@@ -6,6 +6,7 @@ import '../../../core/database/database.dart';
 import '../../../core/models/task_enums.dart';
 import '../../../core/notifications/notification_provider.dart';
 import '../../checkin/presentation/checkin_scheduling.dart';
+import '../../recurrence/presentation/recurrence_providers.dart';
 import 'add_edit_task_sheet.dart';
 import 'today_providers.dart';
 
@@ -17,6 +18,8 @@ import 'today_providers.dart';
 /// Insights), which only ever counts true `completed` status — grouping
 /// an ended task alongside completed ones here is a display convenience,
 /// not a claim that it was finished.
+enum _RecurringTaskAction { deleteOccurrence, stopRepeating }
+
 bool isTaskResolved(Task task) {
   final status = TaskStatus.fromDb(task.status);
   return status == TaskStatus.completed || status == TaskStatus.cancelled;
@@ -109,15 +112,44 @@ class TaskTile extends ConsumerWidget {
                             ),
                       )
                     : null,
-        trailing: IconButton(
-          icon: const Icon(Icons.close, size: 18),
-          onPressed: () async {
-            await ref.read(todayRepositoryProvider).deleteTask(task.id);
-            await ref
-                .read(notificationServiceProvider)
-                .cancelTaskCheckIn(task.id);
-          },
-        ),
+        trailing: task.recurrenceRuleId == null
+            ? IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () async {
+                  await ref.read(todayRepositoryProvider).deleteTask(task.id);
+                  await ref
+                      .read(notificationServiceProvider)
+                      .cancelTaskCheckIn(task.id);
+                },
+              )
+            : PopupMenuButton<_RecurringTaskAction>(
+                icon: const Icon(Icons.more_vert, size: 18),
+                onSelected: (action) async {
+                  switch (action) {
+                    case _RecurringTaskAction.deleteOccurrence:
+                      await ref
+                          .read(todayRepositoryProvider)
+                          .deleteTask(task.id);
+                      await ref
+                          .read(notificationServiceProvider)
+                          .cancelTaskCheckIn(task.id);
+                    case _RecurringTaskAction.stopRepeating:
+                      await ref
+                          .read(recurrenceRepositoryProvider)
+                          .deleteRule(task.recurrenceRuleId!);
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: _RecurringTaskAction.deleteOccurrence,
+                    child: Text('Delete this occurrence'),
+                  ),
+                  PopupMenuItem(
+                    value: _RecurringTaskAction.stopRepeating,
+                    child: Text('Stop repeating'),
+                  ),
+                ],
+              ),
       ),
     );
   }

@@ -14,3 +14,15 @@ final insightsRepositoryProvider = Provider<InsightsRepository>((ref) {
 final insightsSummaryProvider = FutureProvider<InsightsSummary>((ref) {
   return ref.watch(insightsRepositoryProvider).computeSummary();
 });
+
+/// A 60-day rolling window — enough to show a meaningful trend without a
+/// horizontally-scrolling chart growing unbounded over years of use.
+/// computeCompletionTrend's `since` stays optional for a future
+/// "full history" view; this provider is just today's chosen default.
+final insightsTrendProvider = FutureProvider<List<TrendPoint>>((ref) {
+  return ref
+      .watch(insightsRepositoryProvider)
+      .computeCompletionTrend(
+        since: DateTime.now().subtract(const Duration(days: 60)),
+      );
+});

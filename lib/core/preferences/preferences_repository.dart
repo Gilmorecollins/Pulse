@@ -10,6 +10,7 @@ class PreferencesRepository {
   static const _keyReportTime = 'report_time';
   static const _keyThemeMode = 'theme_mode';
   static const _keyNotificationsEnabled = 'notifications_enabled';
+  static const _keyLastSyncedAt = 'drive_last_synced_at';
 
   Future<bool> isOnboardingComplete() async {
     final prefs = await SharedPreferences.getInstance();
@@ -71,6 +72,24 @@ class PreferencesRepository {
   Future<void> setThemeMode(ThemeMode mode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyThemeMode, mode.name);
+  }
+
+  /// When the last successful Drive backup or restore completed. Sync
+  /// "enabled" state itself isn't separately tracked here — it's just
+  /// whether GoogleDriveService has a signed-in account (see
+  /// driveAccountProvider), which google_sign_in already persists across
+  /// launches on its own.
+  Future<DateTime?> getLastSyncedAt() async {
+    final prefs = await SharedPreferences.getInstance();
+    final millis = prefs.getInt(_keyLastSyncedAt);
+    return millis == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  Future<void> setLastSyncedAt(DateTime time) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyLastSyncedAt, time.millisecondsSinceEpoch);
   }
 
   String _formatTime(TimeOfDay time) =>

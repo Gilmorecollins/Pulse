@@ -52,14 +52,15 @@ class InsightsScreen extends ConsumerWidget {
   }
 }
 
-class _InsightsBody extends StatelessWidget {
+class _InsightsBody extends ConsumerWidget {
   const _InsightsBody({required this.summary});
 
   final InsightsSummary summary;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final consistency = summary.checkInConsistency;
+    final trendAsync = ref.watch(insightsTrendProvider);
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -73,6 +74,16 @@ class _InsightsBody extends StatelessWidget {
               ),
         ),
         const SizedBox(height: 16),
+        trendAsync.when(
+          loading: () => const _TrendCardPlaceholder(),
+          error: (err, st) => _TrendCardError(
+            onRetry: () => ref.invalidate(insightsTrendProvider),
+          ),
+          data: (points) => points.isEmpty
+              ? const SizedBox.shrink()
+              : _TrendChart(points: points),
+        ),
+        const SizedBox(height: 12),
         _StatCard(
           label: 'Average completion',
           value: '${(summary.averageCompletion * 100).round()}%',
@@ -139,6 +150,130 @@ class _StatCard extends StatelessWidget {
                   ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Bar-per-day completion trend. Hand-rolled rather than a charting
+/// package: no charting library exists in this app yet, and one
+/// personal user's realistic data volume (tens to low-hundreds of
+/// points) doesn't justify the dependency.
+class _TrendChart extends StatelessWidget {
+  const _TrendChart({required this.points});
+
+  final List<TrendPoint> points;
+
+  static const _barWidth = 12.0;
+  static const _barSpacing = 6.0;
+  static const _chartHeight = 100.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Completion trend',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: _chartHeight,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                reverse: true, // most recent day visible by default
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    for (final point in points)
+                      Padding(
+                        padding: const EdgeInsets.only(right: _barSpacing),
+                        child: Tooltip(
+                          message:
+                              '${DateFormat('d MMM').format(point.date)} — '
+                              '${(point.completionRate * 100).round()}%',
+                          child: Container(
+                            width: _barWidth,
+                            height:
+                                _chartHeight *
+                                point.completionRate.clamp(0.05, 1.0),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  DateFormat('d MMM').format(points.first.date),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                Text(
+                  DateFormat('d MMM').format(points.last.date),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TrendCardPlaceholder extends StatelessWidget {
+  const _TrendCardPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      child: SizedBox(
+        height: 172,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+}
+
+class _TrendCardError extends StatelessWidget {
+  const _TrendCardError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                "Couldn't load the completion trend.",
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
       ),

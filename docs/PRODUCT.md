@@ -19,7 +19,10 @@ The core question Pulse keeps asking is:
 
 v1 is single-user: just the person running the app on their own phone. No
 accounts, no multi-tenant backend, no login screen. This can change later,
-but nothing in v1 should assume it will.
+but nothing in v1 should assume it will. The one exception is Google
+Drive backup (see ARCHITECTURE.md's "Backup" section): sign-in there is
+the user's own Google account used purely as personal storage for their
+own device backup, not a Pulse-owned account system or backend.
 
 ## Non-goals
 
@@ -45,7 +48,10 @@ Explicitly deferred past v1 (see ROADMAP.md for order):
 - AI natural-language task extraction & daily summaries
 - Insights/analytics screen
 - WhatsApp report delivery
-- Offline sync engine (v1 is local-only, so there's nothing to sync yet)
+
+Since shipped, ahead of where this list originally put it: manual Google
+Drive backup/restore (single-device backup, not real-time multi-device
+sync — see ARCHITECTURE.md's "Backup" section).
 
 ## Design principles
 

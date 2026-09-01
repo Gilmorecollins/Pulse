@@ -89,6 +89,11 @@ class TodayRepository {
     DateTime? plannedFor,
     DateTime? expectedCompletionTime,
     String? description,
+    // Set only when this task is a materialized occurrence of a
+    // RecurrenceRule (see RecurrenceRepository) — every other feature
+    // treats it as an ordinary task, this is purely for "stop
+    // repeating"/series-membership UI.
+    String? recurrenceRuleId,
   }) async {
     final trimmed = title.trim();
     final trimmedDescription = description?.trim();
@@ -106,6 +111,7 @@ class TodayRepository {
             ? null
             : trimmedDescription,
       ),
+      recurrenceRuleId: Value(recurrenceRuleId),
     );
     return _db.into(_db.tasks).insertReturning(task);
   }

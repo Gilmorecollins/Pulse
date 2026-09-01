@@ -11,16 +11,42 @@
 
 ## Why local-first
 
-v1 is single-user, so there is no multi-device sync problem to solve yet.
 The local Drift database is the source of truth. This keeps the app fully
 functional offline by construction, rather than as a feature bolted on
 later (see original spec §29 — offline-first was already a stated
 requirement, and local-first as the *default* architecture is the simplest
-way to satisfy it).
+way to satisfy it). Google Drive backup (below) doesn't change this: it's
+a backup target, not a second source of truth. There's still no
+conflict-resolution engine, and still no assumption that more than one
+device is active at a time — the app is used from one phone, backed up,
+and (if the phone changes) restored onto the next one.
 
 AI is not part of v1 (see docs/API.md, ROADMAP.md Phase 9). Whatever
 form it takes if revisited, it should not store tasks, reports, or
 reflections — the phone stays the database.
+
+## Backup
+
+Manual Google Drive backup/restore (`lib/core/backup/`,
+`lib/features/backup/`) — not a live sync engine. A backup is a
+whole-file SQLite snapshot, not a per-table export: `VACUUM INTO` a temp
+file (atomic and consistent even mid-write, unlike a raw `File.copy`),
+uploaded to the signed-in user's Drive **App Data folder**
+(`drive.appdata` scope — hidden from their normal Drive UI, avoids the
+OAuth-verification burden broader scopes trigger). Because it's a raw
+file, this stays correct across future schema changes automatically — no
+per-table exporter to update when a table is added.
+
+Explicit only: a "Back up now" / "Restore" action the user triggers
+themselves, plus a silent (no-prompt) sign-in check on launch. No
+continuous background sync, no conflict resolution — not needed for one
+person using one device at a time — and never a silent restore, since
+that overwrites local data. Restoring replaces `pulse.sqlite` on disk
+after validating the downloaded file's SQLite header and saving the
+previous file as `pulse.sqlite.bak`; the live database connection is
+closed first and the app asks to be restarted afterward rather than
+attempting a hot-swap of a connection other screens may still be
+streaming from.
 
 ## Layering
 

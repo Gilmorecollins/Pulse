@@ -201,6 +201,48 @@ setup/verification cost for what is here one person messaging
 themselves. Revisit the full API only if this is ever used by more than
 one person, or automatic (no-tap) delivery becomes a real requirement.
 
+## Phase 12 — Google Drive Backup 🚧 (in progress)
+
+Manual backup/restore of the whole local database to the user's own
+Google Drive (App Data folder scope), triggered by the testing-device
+switch (S25 → secondary phone) exposing that there was previously no way
+to carry data across devices. See docs/ARCHITECTURE.md's "Backup"
+section for the design (`VACUUM INTO` snapshot, not per-table export;
+manual only, no background sync, no auto-restore). Code landed; pending
+on-device sign-in/backup/restore verification once the Google Cloud
+Console OAuth client is fully configured.
+
+## Phase 13 — Recurring Tasks ✅
+
+Schema v4 (`RecurrenceRules` table, `Tasks.recurrenceRuleId`) — a rule is
+a template; occurrences are ordinary Tasks rows materialized lazily on
+app open (see docs/ARCHITECTURE.md), so every existing feature
+(Today/Week/Report/Insights) handles them for free. Add Task gained a
+Repeat picker (None/Daily/Weekdays); v1 scope trim: editing a
+materialized occurrence only ever edits that single day, never the
+series — the only way to change a series is delete-and-recreate it
+("Stop repeating" on the task's overflow menu).
+
+**Verified live on-device**: a daily rule appeared on Today and every
+Week day; a single-weekday rule only appeared on its matching day;
+"Stop repeating" removed the not-yet-done occurrences; editing a
+materialized occurrence showed the "part of a repeating series" banner
+instead of the Repeat picker (a layout overflow found here on a
+narrower device was fixed by wrapping the banner text in `Expanded`);
+Insights correctly still showed its original empty state rather than a
+premature/broken trend chart, since no day had a generated report yet.
+
+## Phase 14 — Insights Trend View 🚧 (code complete, pending live data)
+
+A hand-rolled bar chart of daily completion rate (`InsightsRepository
+.computeCompletionTrend`, 60-day window) added above the existing stat
+cards — see docs/ARCHITECTURE.md. No charting package added; not needed
+at this data volume. `flutter analyze`/`flutter test` clean, including a
+dedicated `computeCompletionTrend` test file. Not yet exercised
+on-device against a real generated report (needs at least one completed
+day → reflection → report cycle) — do that as part of the next full
+day's use.
+
 ## Deferred — App lock screen (on hold, pending design)
 
 A local PIN/password gate on app open — not a real account system. No
@@ -210,6 +252,14 @@ consistent with Pulse's local-only, single-user architecture (a full
 email+password *account* system was considered and explicitly rejected —
 see docs/ARCHITECTURE.md's local-first reasoning, which a backend-auth
 system would contradict for no real benefit here).
+
+**Update, Phase 12:** the "no accounts, no backend" precedent cited above
+has since been superseded — Pulse added Google Drive backup, which does
+require a Google sign-in. That doesn't change the reasoning here, though:
+Drive sign-in delegates entirely to Google's own OAuth (no Pulse-owned
+credentials, no Pulse-owned backend server), which is materially
+different from the email+password account system this section was
+rejecting. The lock-screen decision stands on its own.
 
 On hold specifically waiting on the user's own visual design/animation
 reference (they want a particular look, to be supplied as screenshots —
