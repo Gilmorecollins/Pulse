@@ -299,16 +299,71 @@ class _TaskSectionSliver extends StatelessWidget {
 }
 
 /// Dismissible notice that a newer release exists (see
-/// core/update/update_providers.dart) — "Update" opens the GitHub
-/// release page in the browser so the user reviews/downloads it
-/// themselves; this app never auto-downloads or auto-installs an APK.
-class _UpdateBanner extends ConsumerWidget {
+/// core/update/update_providers.dart). "Update" downloads the release
+/// APK in-app and hands it to Android's package installer — falls back
+/// to opening the GitHub release page in the browser if the release has
+/// no attached .apk asset. Android still requires the user's own tap to
+/// confirm the install; nothing here installs silently.
+class _UpdateBanner extends ConsumerStatefulWidget {
   const _UpdateBanner({required this.release});
 
   final LatestRelease release;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_UpdateBanner> createState() => _UpdateBannerState();
+}
+
+class _UpdateBannerState extends ConsumerState<_UpdateBanner> {
+  bool _downloading = false;
+  double? _progress;
+
+  Future<void> _openInBrowser() async {
+    final launched = await launchUrl(
+      Uri.parse(widget.release.releaseUrl),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't open the release page")),
+      );
+    }
+  }
+
+  Future<void> _update() async {
+    final apkUrl = widget.release.apkDownloadUrl;
+    if (apkUrl == null) {
+      await _openInBrowser();
+      return;
+    }
+
+    setState(() {
+      _downloading = true;
+      _progress = null;
+    });
+    final service = ref.read(updateCheckServiceProvider);
+    try {
+      final file = await service.downloadApk(
+        apkUrl,
+        onProgress: (p) {
+          if (mounted) setState(() => _progress = p);
+        },
+      );
+      await service.installApk(file);
+      // No further action on success — the system installer takes over
+      // the screen; this widget doesn't need to do anything else.
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Couldn't download the update")),
+        );
+      }
+    }
+    if (mounted) setState(() => _downloading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final release = widget.release;
     final scheme = Theme.of(context).colorScheme;
     return Card(
       color: scheme.secondaryContainer,
@@ -322,43 +377,49 @@ class _UpdateBanner extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                '${release.name} is available',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSecondaryContainer,
-                    ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${release.name} is available',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSecondaryContainer,
+                        ),
+                  ),
+                  if (_downloading) ...[
+                    const SizedBox(height: 6),
+                    LinearProgressIndicator(value: _progress),
+                  ],
+                ],
               ),
             ),
-            TextButton(
-              onPressed: () async {
-                final launched = await launchUrl(
-                  Uri.parse(release.releaseUrl),
-                  mode: LaunchMode.externalApplication,
-                );
-                if (!launched && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Couldn't open the release page"),
-                    ),
-                  );
-                }
-              },
-              child: const Text('Update'),
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.close,
-                size: 18,
-                color: scheme.onSecondaryContainer,
+            if (_downloading)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              TextButton(onPressed: _update, child: const Text('Update')),
+            if (!_downloading)
+              IconButton(
+                icon: Icon(
+                  Icons.close,
+                  size: 18,
+                  color: scheme.onSecondaryContainer,
+                ),
+                tooltip: 'Dismiss',
+                onPressed: () async {
+                  await ref
+                      .read(preferencesRepositoryProvider)
+                      .setDismissedUpdateVersion(release.version);
+                  ref.invalidate(updateInfoProvider);
+                },
               ),
-              tooltip: 'Dismiss',
-              onPressed: () async {
-                await ref
-                    .read(preferencesRepositoryProvider)
-                    .setDismissedUpdateVersion(release.version);
-                ref.invalidate(updateInfoProvider);
-              },
-            ),
           ],
         ),
       ),

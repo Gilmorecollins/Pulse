@@ -60,12 +60,22 @@ signing key is ever added later.
 `lib/core/update/` checks GitHub's public releases API
 (`/repos/.../releases/latest`, no auth) once per app session and shows a
 dismissible banner on Today (`_UpdateBanner`) if a newer tag exists than
-the installed version (`package_info_plus`). "Update" opens the release
-page in the browser — the app never auto-downloads or auto-installs an
-APK. **This depends on the repo staying public**: a private repo's
-releases API requires auth this app doesn't carry, so the check would
-silently find nothing (fails closed, not with an error — see
-`UpdateCheckService.fetchLatestRelease`'s error handling).
+the installed version (`package_info_plus`). **This depends on the repo
+staying public**: a private repo's releases API requires auth this app
+doesn't carry, so the check would silently find nothing (fails closed,
+not with an error — see `UpdateCheckService.fetchLatestRelease`'s error
+handling).
+
+"Update" downloads the release's `.apk` asset in-app
+(`UpdateCheckService.downloadApk`, with progress shown inline on the
+banner) and hands it to Android's package installer via the `open_filex`
+plugin (`installApk`) — falls back to opening the release page in the
+browser if a release has no `.apk` asset attached. Android still
+requires the user's own tap to confirm the install (and, the first
+time, a tap through "allow installs from this app" — the OS shows this
+automatically, not something Pulse's code drives); **no Android app can
+silently self-update**, sideloaded or not, so this is the most direct
+flow the platform allows, not a fully automatic one.
 
 ## Layering
 

@@ -259,27 +259,43 @@ at this data volume.
 the report generated, and confirmed a single trend bar appeared above
 the stat cards on Insights matching that day's completion rate.
 
-## Phase 15 — GitHub Releases Distribution + Update Check 🚧 (code complete, pending live verification)
+## Phase 15 — GitHub Releases Distribution + Update Check 🚧 (v1.0.1 pending publish)
 
 First tagged release, `v1.0.0`, published to GitHub Releases
 (`github.com/Gilmorecollins/Pulse/releases/tag/v1.0.0`) as a downloadable
 release APK — Pulse's actual distribution channel, since it isn't on the
 Play Store. See docs/ARCHITECTURE.md's "Distribution and update check"
-section.
+section. Repo was briefly made private mid-session (to scope who could
+download the first release) and switched back to public, since the
+update check below needs the unauthenticated releases API to work.
+
+**Bug found in `v1.0.0` itself**: `flutter build apk --release` enables
+R8 resource shrinking by default, which silently dropped the custom
+check-in notification sound (only referenced as a string from Dart,
+invisible to the shrinker's static analysis) from the release APK —
+debug builds were unaffected. Onboarding's "Start using Pulse" then
+threw an uncaught exception scheduling the reflection notification and
+hung forever with no error shown, since that call wasn't guarded.
+Fixed with a `res/raw/keep.xml` keep-rule plus defensively wrapping
+onboarding's notification setup so a future failure there can never
+block getting into the app again. Ships in `v1.0.1` along with an app
+icon update (the "Group 4" design, refined from the Navy Mirage-themed
+icon work).
 
 Paired with an in-app update check: a dismissible banner on Today when a
-newer GitHub release exists than the installed version, linking out to
-the release page rather than auto-installing anything. Requires the repo
-to stay public for the unauthenticated releases API to work — the repo
-was briefly made private mid-session (to scope who could download the
-first release) and switched back to public specifically to keep this
-working.
+newer GitHub release exists than the installed version. "Update"
+downloads the release's `.apk` asset in-app (progress shown inline) and
+hands it to Android's package installer (`open_filex`) — falls back to
+opening the release page in the browser if a release has no `.apk`
+asset. Android still requires the user's own tap to confirm the install;
+true silent self-update isn't possible for a sideloaded app on Android,
+by design of the platform.
 
 Code lands with a new `test/version_compare_test.dart` (the tag/version
-comparison logic) — not yet exercised against a real second release
-(needs `v1.0.1`+ to exist to confirm the banner actually appears,
-dismisses correctly, and reappears for a further release after a prior
-one was dismissed).
+comparison logic) — not yet exercised live against a real second release
+(needs `v1.0.1` to actually publish to confirm the banner appears on a
+`v1.0.0` install, downloads, installs, dismisses correctly, and
+reappears for a further release after a prior one was dismissed).
 
 ## Deferred — App lock screen (on hold, pending design)
 

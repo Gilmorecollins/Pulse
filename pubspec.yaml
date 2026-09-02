@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.1+1
 
 environment:
   sdk: ^3.13.2
@@ -79,6 +79,13 @@ dependencies:
   # lib/core/update/.
   http: ^1.2.2
   package_info_plus: ^8.1.2
+
+  # In-app update install — downloads the release APK and hands it to
+  # the system installer (Android still requires the user's explicit
+  # confirmation; no app can silently self-install). Bundles its own
+  # FileProvider, so no AndroidManifest FileProvider/file_paths.xml
+  # needed on our side — just the REQUEST_INSTALL_PACKAGES permission.
+  open_filex: ^4.7.0
 
 dev_dependencies:
   flutter_test:

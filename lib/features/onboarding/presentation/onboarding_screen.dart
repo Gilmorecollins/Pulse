@@ -48,9 +48,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         );
     ref.invalidate(userNameProvider);
 
-    final notifications = ref.read(notificationServiceProvider);
-    await notifications.requestPermissions();
-    await notifications.scheduleDailyReflection(_reportTime);
+    // Notification setup is secondary to actually getting into the app —
+    // a permission denial or a scheduling failure (e.g. a stripped sound
+    // resource; see android/app/src/main/res/raw/keep.xml) must never
+    // strand the user on this loading spinner with no way forward. Worst
+    // case here, reflection just isn't scheduled yet; the resync logic
+    // in main.dart and the Settings notifications toggle can recover it.
+    try {
+      final notifications = ref.read(notificationServiceProvider);
+      await notifications.requestPermissions();
+      await notifications.scheduleDailyReflection(_reportTime);
+    } catch (_) {
+      // Swallowed deliberately — see comment above.
+    }
 
     if (mounted) context.go('/today');
   }

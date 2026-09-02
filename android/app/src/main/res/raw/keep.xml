@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  f1_checkin.mp3 is referenced only as a string constant from Dart
+  (RawResourceAndroidNotificationSound('f1_checkin') in
+  notification_service.dart) — a runtime platform-channel call the
+  Android resource shrinker's static reachability analysis can't see.
+  Without this, a Flutter release build silently drops the file from
+  release builds only (debug builds are unaffected, since shrinking
+  doesn't run there), which throws PlatformException
+  (invalid_sound) the first time a notification tries to use it. See
+  docs/ARCHITECTURE.md's "Notifications" section.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/f1_checkin" />
