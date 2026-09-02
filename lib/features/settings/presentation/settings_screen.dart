@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -459,11 +460,17 @@ class _AboutRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: 20),
-      leading: Icon(Icons.info_outline),
-      title: Text('About'),
-      trailing: Text('v1.0.0'),
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) {
+        final version = snapshot.data?.version;
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+          leading: const Icon(Icons.info_outline),
+          title: const Text('About'),
+          trailing: Text(version == null ? '—' : 'v$version'),
+        );
+      },
     );
   }
 }
