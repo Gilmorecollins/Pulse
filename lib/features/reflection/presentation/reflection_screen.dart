@@ -75,7 +75,7 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🌙 Daily Reflection'),
+        title: const Text('Daily Reflection'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => context.go('/today'),

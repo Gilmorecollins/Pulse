@@ -23,7 +23,7 @@ class TaskCheckInScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('⚡ Pulse Check-in'),
+        title: const Text('Pulse'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => context.go('/today'),

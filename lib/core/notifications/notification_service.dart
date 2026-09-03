@@ -49,7 +49,10 @@ class NotificationService {
       // wall-clock time until this succeeds on a later launch.
     }
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    // A plain monochrome line, not the full-color launcher icon — Android
+    // renders notification icons as a flat white silhouette regardless,
+    // so a full-color logo used to collapse into an illegible blob.
+    const androidSettings = AndroidInitializationSettings('ic_stat_pulse');
     const settings = InitializationSettings(android: androidSettings);
 
     final launchDetails = await _plugin.getNotificationAppLaunchDetails();
@@ -123,7 +126,7 @@ class NotificationService {
 
     await _plugin.zonedSchedule(
       _taskNotificationId(taskId),
-      '⚡ Pulse Check-in',
+      'Pulse',
       "Almost time for '$taskTitle' — how's it going?",
       tz.TZDateTime.from(fireAt, tz.local),
       const NotificationDetails(
@@ -148,7 +151,7 @@ class NotificationService {
   Future<void> scheduleDailyReflection(TimeOfDay time) async {
     await _plugin.zonedSchedule(
       reflectionNotificationId,
-      '🌙 Daily Reflection',
+      'Daily Reflection',
       "Let's look back on today.",
       _nextInstanceOf(time),
       const NotificationDetails(

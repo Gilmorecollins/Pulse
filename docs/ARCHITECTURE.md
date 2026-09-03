@@ -57,6 +57,17 @@ keystore (see `android/app/build.gradle.kts`'s `TODO`) — fine for
 personal/sideloaded distribution, but note this if a dedicated release
 signing key is ever added later.
 
+**Every release must bump the build number** (the part after `+` in
+`version:` — Android's `versionCode`), not just the version name.
+v1.0.0 and v1.0.1 both shipped as `+1`, which Android's package
+installer (Samsung's especially) treats as "not a valid update" over an
+already-installed app with the same `versionCode` — it fails with a bare
+"App not installed" and no explanation, even though the content
+genuinely differs and the signing key matches. A fresh install (nothing
+already on the device) is unaffected; this only bites anyone updating
+in place. Bump both numbers together going forward, e.g. `1.0.1+1` →
+`1.0.2+2`.
+
 `lib/core/update/` checks GitHub's public releases API
 (`/repos/.../releases/latest`, no auth) once per app session and shows a
 dismissible banner on Today (`_UpdateBanner`) if a newer tag exists than
