@@ -110,8 +110,10 @@ flutter_launcher_icons:
   image_path: "assets/icon/icon.png"
   min_sdk_android: 21
 
-# Native splash — the app icon centered on a Navy Mirage background
-# (see docs/ARCHITECTURE.md). An earlier attempt used a hand-generated
+# Native splash — the app icon centered on the icon's own navy blue
+# (#3F5E96, same for light and dark system theme — a deliberate choice
+# to match the icon rather than switch backgrounds; see
+# docs/ARCHITECTURE.md). An earlier attempt used a hand-generated
 # "PULSE" text wordmark instead; dropped after it rendered with visible
 # ghosting/blur artifacts and just looked bad. Static, not animated: a
 # native splash runs before Flutter boots, so any real animation would
@@ -128,14 +130,14 @@ flutter_launcher_icons:
 # Regenerate with `dart run flutter_native_splash:create` after
 # changing anything below.
 flutter_native_splash:
-  color: "#F1F4FA"
+  color: "#3F5E96"
   image: assets/splash/icon_padded.png
-  color_dark: "#141E30"
+  color_dark: "#3F5E96"
   image_dark: assets/splash/icon_padded.png
   android_12:
-    color: "#F1F4FA"
+    color: "#3F5E96"
     image: assets/splash/icon_padded.png
-    color_dark: "#141E30"
+    color_dark: "#3F5E96"
     image_dark: assets/splash/icon_padded.png
 
 # For information on the generic Dart part of this file, see the
