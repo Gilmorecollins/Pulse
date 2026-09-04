@@ -42,8 +42,20 @@ class GoogleDriveService implements DriveBackupTransport {
       _googleSignIn.onCurrentUserChanged;
 
   /// No prompt shown — a no-op if there's no previously-granted session.
+  /// Called from main() before runApp (see lib/main.dart), so this must
+  /// never hang: a device with a real prior Drive session can have this
+  /// try to validate/refresh that session over the network on launch,
+  /// and without a timeout a slow or stuck network call here blocks the
+  /// native splash from ever handing off to Flutter — the whole app
+  /// appears frozen on a blank splash screen forever. Worst case on
+  /// timeout/failure, Settings just shows "not connected" until the
+  /// user signs in there again, which still works normally.
   Future<void> initializeSilentSignIn() async {
-    await _googleSignIn.signInSilently();
+    try {
+      await _googleSignIn.signInSilently().timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // Swallowed deliberately — see comment above.
+    }
   }
 
   Future<GoogleSignInAccount?> signIn() => _googleSignIn.signIn();
