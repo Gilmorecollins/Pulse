@@ -20,7 +20,20 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final notificationService = NotificationService();
-  await notificationService.initialize();
+  // Never let notification setup block getting into the app at all —
+  // this exact call has now frozen startup completely, twice, on a
+  // stripped-resource release build (see android/app/src/main/res/raw/
+  // keep.xml and docs/ARCHITECTURE.md's "Notifications" section): an
+  // uncaught exception here happens before runApp(), so Flutter never
+  // draws a first frame and the native splash just stays up forever.
+  // Any other future initialize() failure on some other device/OEM
+  // should degrade the same way (notifications just don't work yet)
+  // rather than bricking the whole app.
+  try {
+    await notificationService.initialize();
+  } catch (_) {
+    // Swallowed deliberately — see comment above.
+  }
 
   final storedThemeMode = await PreferencesRepository().getThemeMode();
 

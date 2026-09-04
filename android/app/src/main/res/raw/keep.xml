@@ -1,14 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  f1_checkin.mp3 is referenced only as a string constant from Dart
-  (RawResourceAndroidNotificationSound('f1_checkin') in
-  notification_service.dart) — a runtime platform-channel call the
+  Both resources below are referenced only as string constants from
+  Dart (RawResourceAndroidNotificationSound('f1_checkin') and
+  AndroidInitializationSettings('ic_stat_pulse') in
+  notification_service.dart) — runtime platform-channel calls the
   Android resource shrinker's static reachability analysis can't see.
-  Without this, a Flutter release build silently drops the file from
+  Without this, a Flutter release build silently drops them from
   release builds only (debug builds are unaffected, since shrinking
-  doesn't run there), which throws PlatformException
-  (invalid_sound) the first time a notification tries to use it. See
-  docs/ARCHITECTURE.md's "Notifications" section.
+  doesn't run there). f1_checkin missing threw PlatformException
+  (invalid_sound) the first time a notification tried to use it (fixed
+  once, in v1.0.1); ic_stat_pulse missing threw PlatformException
+  (invalid_icon) from NotificationService.initialize() in main() —
+  BEFORE runApp(), so the exception was uncaught and Flutter never drew
+  a first frame, which meant the native splash just stayed up forever
+  (fixed in v1.0.4). Same root cause both times: any Android resource
+  referenced only by string name from Dart needs an explicit keep rule
+  here, not just resources added at the time this file happened to get
+  touched. See docs/ARCHITECTURE.md's "Notifications" section.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@raw/f1_checkin" />
+    tools:keep="@raw/f1_checkin,@drawable/ic_stat_pulse" />
