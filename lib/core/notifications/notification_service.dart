@@ -6,6 +6,8 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../backup/backup_frequency.dart';
+
 /// Wraps local notification scheduling for Pulse (see
 /// docs/ARCHITECTURE.md — "Notifications / check-in scheduling"). Check-ins
 /// are per-task: each task with an expected completion time gets its own
@@ -18,6 +20,7 @@ class NotificationService {
   final _tapController = StreamController<String?>.broadcast();
 
   static const reflectionNotificationId = 2;
+  static const backupReminderNotificationId = 3;
   static const checkInLeadTime = Duration(minutes: 5);
   // _v2 (custom sound) — Android notification channels are immutable
   // once created, so changing the sound requires a new channel id rather
@@ -25,6 +28,7 @@ class NotificationService {
   // old channel would otherwise keep the default sound forever.
   static const _checkInChannelId = 'pulse_checkin_v2';
   static const _reflectionChannelId = 'pulse_reflection_v2';
+  static const _backupChannelId = 'pulse_backup_v1';
   static const _checkInSound = RawResourceAndroidNotificationSound(
     'f1_checkin',
   );
@@ -82,6 +86,14 @@ class NotificationService {
         description: "Pulse's end-of-day reflection.",
         importance: Importance.high,
         sound: _checkInSound,
+      ),
+    );
+    await android?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _backupChannelId,
+        'Pulse Backup',
+        description: "Pulse's scheduled Google Drive backup reminders.",
+        importance: Importance.defaultImportance,
       ),
     );
 
@@ -173,6 +185,67 @@ class NotificationService {
 
   Future<void> cancelReflection() => _plugin.cancel(reflectionNotificationId);
 
+  /// Schedules the recurring reminder that drives scheduled Drive
+  /// backup (see docs/ARCHITECTURE.md's "Backup" section). This alarm
+  /// only *reminds* — the actual upload runs when the user taps it (see
+  /// the 'backup' payload handling in lib/main.dart), since there's no
+  /// reliable way to run a silent background upload at an exact time on
+  /// Android without the app's process running. [weekday] (1-7,
+  /// DateTime.monday..sunday) is required for weekly, [dayOfMonth]
+  /// (1-31, clamped to the target month's actual length) for monthly.
+  /// [BackupFrequency.off] just cancels any existing reminder.
+  Future<void> scheduleBackupReminder({
+    required BackupFrequency frequency,
+    required TimeOfDay time,
+    int? weekday,
+    int? dayOfMonth,
+  }) async {
+    if (frequency == BackupFrequency.off) {
+      await cancelBackupReminder();
+      return;
+    }
+
+    final tz.TZDateTime nextInstance;
+    final DateTimeComponents matchComponents;
+    switch (frequency) {
+      case BackupFrequency.daily:
+        nextInstance = _nextInstanceOf(time);
+        matchComponents = DateTimeComponents.time;
+      case BackupFrequency.weekly:
+        assert(weekday != null, 'weekly backup requires a weekday');
+        nextInstance = _nextWeeklyInstanceOf(time, weekday!);
+        matchComponents = DateTimeComponents.dayOfWeekAndTime;
+      case BackupFrequency.monthly:
+        assert(dayOfMonth != null, 'monthly backup requires a dayOfMonth');
+        nextInstance = _nextMonthlyInstanceOf(time, dayOfMonth!);
+        matchComponents = DateTimeComponents.dayOfMonthAndTime;
+      case BackupFrequency.off:
+        return; // unreachable, handled above
+    }
+
+    await _plugin.zonedSchedule(
+      backupReminderNotificationId,
+      'Pulse',
+      'Your scheduled Drive backup is ready — tap to run it.',
+      nextInstance,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _backupChannelId,
+          'Pulse Backup',
+          channelDescription: "Pulse's scheduled Google Drive backup reminders.",
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: matchComponents,
+      payload: 'backup',
+    );
+  }
+
+  Future<void> cancelBackupReminder() =>
+      _plugin.cancel(backupReminderNotificationId);
+
   tz.TZDateTime _nextInstanceOf(TimeOfDay time) {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
@@ -187,6 +260,50 @@ class NotificationService {
       scheduled = scheduled.add(const Duration(days: 1));
     }
     return scheduled;
+  }
+
+  tz.TZDateTime _nextWeeklyInstanceOf(TimeOfDay time, int weekday) {
+    var scheduled = _nextInstanceOf(time);
+    while (scheduled.weekday != weekday) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
+  }
+
+  tz.TZDateTime _nextMonthlyInstanceOf(TimeOfDay time, int dayOfMonth) {
+    final now = tz.TZDateTime.now(tz.local);
+    var year = now.year;
+    var month = now.month;
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      year,
+      month,
+      _clampDayOfMonth(year, month, dayOfMonth),
+      time.hour,
+      time.minute,
+    );
+    if (!scheduled.isAfter(now)) {
+      month += 1;
+      if (month > 12) {
+        month = 1;
+        year += 1;
+      }
+      scheduled = tz.TZDateTime(
+        tz.local,
+        year,
+        month,
+        _clampDayOfMonth(year, month, dayOfMonth),
+        time.hour,
+        time.minute,
+      );
+    }
+    return scheduled;
+  }
+
+  /// e.g. day 31 requested for a 30-day month becomes 30.
+  int _clampDayOfMonth(int year, int month, int day) {
+    final lastDayOfMonth = DateTime(year, month + 1, 0).day;
+    return day > lastDayOfMonth ? lastDayOfMonth : day;
   }
 
   void dispose() => _tapController.close();

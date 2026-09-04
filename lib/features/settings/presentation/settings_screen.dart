@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../core/notifications/notification_provider.dart';
 import '../../../core/preferences/preferences_provider.dart';
+import '../../../core/widgets/option_sheet.dart';
 import '../../backup/presentation/backup_card.dart';
 import '../../backup/presentation/backup_providers.dart';
 import '../../checkin/presentation/checkin_providers.dart';
@@ -229,41 +230,46 @@ class _PreferencesCard extends StatelessWidget {
   }
 }
 
+const _themeChoices = [
+  OptionChoice(value: ThemeMode.system, label: 'Auto'),
+  OptionChoice(value: ThemeMode.light, label: 'Light'),
+  OptionChoice(value: ThemeMode.dark, label: 'Dark'),
+];
+
 class _ThemeRow extends ConsumerWidget {
   const _ThemeRow();
+
+  String _subtitleFor(ThemeMode mode) => switch (mode) {
+    ThemeMode.system => 'Auto',
+    ThemeMode.light => 'Light',
+    ThemeMode.dark => 'Dark',
+  };
+
+  Future<void> _openPicker(BuildContext context, WidgetRef ref) async {
+    final current = ref.read(themeModeProvider);
+    final chosen = await showOptionPicker<ThemeMode>(
+      context,
+      title: 'Theme',
+      choices: _themeChoices,
+      current: current,
+    );
+    if (chosen == null) return;
+
+    ref.read(themeModeProvider.notifier).state = chosen;
+    await ref.read(preferencesRepositoryProvider).setThemeMode(chosen);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mode = ref.watch(themeModeProvider);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        children: [
-          const Icon(Icons.dark_mode_outlined),
-          const SizedBox(width: 16),
-          const Expanded(child: Text('Dark Mode')),
-          SegmentedButton<ThemeMode>(
-            showSelectedIcon: false,
-            style: const ButtonStyle(
-              visualDensity: VisualDensity.compact,
-            ),
-            segments: const [
-              ButtonSegment(value: ThemeMode.system, label: Text('Auto')),
-              ButtonSegment(value: ThemeMode.light, label: Text('Light')),
-              ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
-            ],
-            selected: {mode},
-            onSelectionChanged: (selection) async {
-              final newMode = selection.first;
-              ref.read(themeModeProvider.notifier).state = newMode;
-              await ref
-                  .read(preferencesRepositoryProvider)
-                  .setThemeMode(newMode);
-            },
-          ),
-        ],
-      ),
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+      leading: const Icon(Icons.dark_mode_outlined),
+      title: const Text('Theme'),
+      subtitle: Text(_subtitleFor(mode)),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => _openPicker(context, ref),
     );
   }
 }

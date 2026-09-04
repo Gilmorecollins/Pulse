@@ -7,9 +7,12 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../../core/backup/backup_frequency.dart';
 import '../../../core/backup/backup_provider.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/notifications/notification_provider.dart';
 import '../../../core/preferences/preferences_provider.dart';
+import '../../../core/widgets/option_sheet.dart';
 import 'backup_providers.dart';
 
 /// Google Drive backup/restore section for Settings — see
@@ -28,6 +31,8 @@ class BackupCard extends StatelessWidget {
           _DriveAccountRow(),
           Divider(height: 1),
           _BackupNowRow(),
+          Divider(height: 1),
+          _AutomaticBackupRow(),
           Divider(height: 1),
           _RestoreRow(),
         ],
@@ -160,6 +165,159 @@ class _BackupNowRowState extends ConsumerState<_BackupNowRow> {
     );
   }
 }
+
+/// Off / Daily / Weekly / Monthly, matching the pattern from apps like
+/// WhatsApp's own backup settings — but powered by the same exact-alarm
+/// notification system as check-ins/reflection, not silent background
+/// work (see docs/ARCHITECTURE.md's "Backup" section for why: Android
+/// can't guarantee silent background work runs at a specific time, only
+/// exact alarms can). The reminder only reminds; tapping it is what
+/// actually runs the backup (see lib/main.dart's 'backup' payload
+/// handling).
+class _AutomaticBackupRow extends ConsumerStatefulWidget {
+  const _AutomaticBackupRow();
+
+  @override
+  ConsumerState<_AutomaticBackupRow> createState() =>
+      _AutomaticBackupRowState();
+}
+
+class _AutomaticBackupRowState extends ConsumerState<_AutomaticBackupRow> {
+  bool _busy = false;
+
+  static const _weekdayNames = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+
+  String _subtitleFor(BackupSchedule schedule, BuildContext context) {
+    if (schedule.frequency == BackupFrequency.off) return 'Off';
+    final timeStr = schedule.time.format(context);
+    return switch (schedule.frequency) {
+      BackupFrequency.daily => 'Daily at $timeStr',
+      BackupFrequency.weekly =>
+        'Weekly on ${_weekdayName(schedule.weekday)} at $timeStr',
+      BackupFrequency.monthly =>
+        'Monthly on day ${schedule.dayOfMonth} at $timeStr',
+      BackupFrequency.off => 'Off',
+    };
+  }
+
+  String _weekdayName(int? weekday) {
+    if (weekday == null || weekday < 1 || weekday > 7) return 'that day';
+    return _weekdayNames[weekday - 1];
+  }
+
+  Future<void> _openPicker() async {
+    final current = await ref.read(backupScheduleProvider.future);
+    if (!mounted) return;
+
+    final chosenFrequency = await showOptionPicker<BackupFrequency>(
+      context,
+      title: 'Automatic backups',
+      choices: _frequencyChoices,
+      current: current.frequency,
+    );
+    if (chosenFrequency == null || !mounted) return;
+
+    if (chosenFrequency == BackupFrequency.off) {
+      await _apply(
+        BackupSchedule(
+          frequency: BackupFrequency.off,
+          time: current.time,
+          weekday: current.weekday,
+          dayOfMonth: current.dayOfMonth,
+        ),
+      );
+      return;
+    }
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: current.time,
+      helpText: 'BACKUP TIME',
+    );
+    if (pickedTime == null || !mounted) return;
+
+    // Weekly/monthly default to "whichever day you're setting this up
+    // on" — see the class doc comment on why there's no separate
+    // day-picker.
+    final now = DateTime.now();
+    await _apply(
+      BackupSchedule(
+        frequency: chosenFrequency,
+        time: pickedTime,
+        weekday: chosenFrequency == BackupFrequency.weekly
+            ? now.weekday
+            : current.weekday,
+        dayOfMonth: chosenFrequency == BackupFrequency.monthly
+            ? now.day
+            : current.dayOfMonth,
+      ),
+    );
+  }
+
+  Future<void> _apply(BackupSchedule schedule) async {
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(preferencesRepositoryProvider)
+          .setBackupSchedule(schedule);
+      await ref
+          .read(notificationServiceProvider)
+          .scheduleBackupReminder(
+            frequency: schedule.frequency,
+            time: schedule.time,
+            weekday: schedule.weekday,
+            dayOfMonth: schedule.dayOfMonth,
+          );
+      ref.invalidate(backupScheduleProvider);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Couldn't update backup schedule: $e")),
+        );
+      }
+    }
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final signedIn = ref.watch(driveAccountProvider).valueOrNull != null;
+    final schedule = ref.watch(backupScheduleProvider).valueOrNull;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+      leading: const Icon(Icons.event_repeat_outlined),
+      title: const Text('Automatic backup'),
+      subtitle: Text(
+        schedule == null ? '—' : _subtitleFor(schedule, context),
+      ),
+      trailing: _busy
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.chevron_right),
+      enabled: signedIn,
+      onTap: (!signedIn || _busy || schedule == null) ? null : _openPicker,
+    );
+  }
+}
+
+const _frequencyChoices = [
+  OptionChoice(value: BackupFrequency.daily, label: 'Daily'),
+  OptionChoice(value: BackupFrequency.weekly, label: 'Weekly'),
+  OptionChoice(value: BackupFrequency.monthly, label: 'Monthly'),
+  OptionChoice(value: BackupFrequency.off, label: 'Off'),
+];
 
 class _RestoreRow extends ConsumerStatefulWidget {
   const _RestoreRow();

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../backup/backup_frequency.dart';
+
 /// Onboarding-collected settings. Deliberately not a database table (see
 /// docs/DATABASE.md) — this is small, single-user, device-local config,
 /// not something that needs relational structure or history.
@@ -12,6 +14,10 @@ class PreferencesRepository {
   static const _keyNotificationsEnabled = 'notifications_enabled';
   static const _keyLastSyncedAt = 'drive_last_synced_at';
   static const _keyDismissedUpdateVersion = 'dismissed_update_version';
+  static const _keyBackupFrequency = 'backup_frequency';
+  static const _keyBackupTime = 'backup_time';
+  static const _keyBackupWeekday = 'backup_weekday';
+  static const _keyBackupDayOfMonth = 'backup_day_of_month';
 
   Future<bool> isOnboardingComplete() async {
     final prefs = await SharedPreferences.getInstance();
@@ -104,6 +110,36 @@ class PreferencesRepository {
   Future<void> setDismissedUpdateVersion(String version) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyDismissedUpdateVersion, version);
+  }
+
+  /// Defaults to [BackupFrequency.off] with no time set — nothing
+  /// scheduled until the user turns this on in Settings.
+  Future<BackupSchedule> getBackupSchedule() async {
+    final prefs = await SharedPreferences.getInstance();
+    final frequency = BackupFrequency.fromDb(
+      prefs.getString(_keyBackupFrequency) ?? 'off',
+    );
+    final time =
+        _parseTime(prefs.getString(_keyBackupTime)) ??
+        const TimeOfDay(hour: 2, minute: 0);
+    return BackupSchedule(
+      frequency: frequency,
+      time: time,
+      weekday: prefs.getInt(_keyBackupWeekday),
+      dayOfMonth: prefs.getInt(_keyBackupDayOfMonth),
+    );
+  }
+
+  Future<void> setBackupSchedule(BackupSchedule schedule) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyBackupFrequency, schedule.frequency.toDb());
+    await prefs.setString(_keyBackupTime, _formatTime(schedule.time));
+    if (schedule.weekday != null) {
+      await prefs.setInt(_keyBackupWeekday, schedule.weekday!);
+    }
+    if (schedule.dayOfMonth != null) {
+      await prefs.setInt(_keyBackupDayOfMonth, schedule.dayOfMonth!);
+    }
   }
 
   String _formatTime(TimeOfDay time) =>

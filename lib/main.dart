@@ -9,12 +9,32 @@ import 'core/notifications/notification_service.dart';
 import 'core/preferences/preferences_provider.dart';
 import 'core/preferences/preferences_repository.dart';
 import 'core/router/app_router.dart';
+import 'features/backup/presentation/backup_providers.dart';
 import 'features/checkin/presentation/checkin_scheduling.dart';
 import 'features/recurrence/data/recurrence_repository.dart';
 import 'features/recurrence/presentation/recurrence_providers.dart';
 import 'features/today/presentation/today_providers.dart';
 
 DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+/// The 'backup' notification only reminds — it doesn't upload anything
+/// itself (no reliable way to run that silently at an exact time on
+/// Android without the app's process running; see
+/// docs/ARCHITECTURE.md's "Backup" section). This runs the actual
+/// upload once the user taps it. A failure here isn't fatal: manual
+/// "Back up now" in Settings still works, and the next scheduled
+/// reminder tries again regardless.
+Future<void> _runScheduledBackup(ProviderContainer container) async {
+  try {
+    await container.read(backupRepositoryProvider).backUpNow();
+    await container
+        .read(preferencesRepositoryProvider)
+        .setLastSyncedAt(DateTime.now());
+    container.invalidate(lastSyncedAtProvider);
+  } catch (_) {
+    // Swallowed deliberately — see comment above.
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,6 +78,8 @@ void main() async {
     } else if (payload != null && payload.startsWith('taskcheckin:')) {
       final taskId = payload.substring('taskcheckin:'.length);
       container.read(routerProvider).go('/checkin/$taskId');
+    } else if (payload == 'backup') {
+      _runScheduledBackup(container);
     }
   });
 
