@@ -168,11 +168,13 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # Onboarding's Welcome step background (see docs/PRODUCT.md — the
-  # only screen with a photographic background; everything else in the
-  # app uses the Navy Mirage palette directly, no imagery).
+  # Onboarding's three photo-backed steps (Welcome, name, and the
+  # check-in explainer) — see docs/PRODUCT.md. Everything else in the
+  # app uses the Navy Mirage palette directly, no imagery.
   assets:
     - assets/onboarding/welcome_background.jpg
+    - assets/onboarding/name_background.jpg
+    - assets/onboarding/checkin_background.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
