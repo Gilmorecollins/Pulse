@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/preferences/preferences_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/pulse_theme.dart';
+import 'core/widgets/startup_loading_screen.dart';
 
 class PulseApp extends ConsumerWidget {
   const PulseApp({super.key});
@@ -21,15 +22,41 @@ class PulseApp extends ConsumerWidget {
       routerConfig: router,
       // The native splash has to stay static (Flutter isn't running
       // yet), but the handoff to this first real frame doesn't have to
-      // be an abrupt cut — see docs/ARCHITECTURE.md. _StartupFadeIn
-      // plays once, the first time this subtree mounts, then stays at
-      // rest; later rebuilds (navigation, theme toggles) just pass
-      // `child` straight through with no re-animation.
+      // be an abrupt cut — see docs/ARCHITECTURE.md. _StartupSequence
+      // plays the branded loading screen then _StartupFadeIn once, the
+      // first time this subtree mounts, then stays at rest; later
+      // rebuilds (navigation, theme toggles) just pass `child` straight
+      // through with no re-animation.
       builder: (context, child) {
         if (child == null) return const SizedBox.shrink();
-        return _StartupFadeIn(child: child);
+        return _StartupSequence(child: child);
       },
     );
+  }
+}
+
+class _StartupSequence extends StatefulWidget {
+  const _StartupSequence({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_StartupSequence> createState() => _StartupSequenceState();
+}
+
+class _StartupSequenceState extends State<_StartupSequence> {
+  bool _loading = true;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return StartupLoadingScreen(
+        onFinished: () {
+          if (mounted) setState(() => _loading = false);
+        },
+      );
+    }
+    return _StartupFadeIn(child: widget.child);
   }
 }
 

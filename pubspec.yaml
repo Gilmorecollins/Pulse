@@ -87,6 +87,18 @@ dependencies:
   # needed on our side — just the REQUEST_INSTALL_PACKAGES permission.
   open_filex: ^4.7.0
 
+  # Profile photo picking (Settings) — uses Android's system Photo
+  # Picker on API 33+ and its own manifest-merged permission on older
+  # versions, so no AndroidManifest changes needed on our side.
+  image_picker: ^1.1.2
+
+  # Serif display font for the startup loading screen only (see
+  # lib/core/widgets/startup_loading_screen.dart) — fetched once at
+  # runtime and cached, same tradeoff as this app's other network
+  # features (Drive, update check); falls back to the system font
+  # rather than failing if offline on first launch.
+  google_fonts: ^6.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -110,35 +122,35 @@ flutter_launcher_icons:
   image_path: "assets/icon/icon.png"
   min_sdk_android: 21
 
-# Native splash — the app icon centered on the icon's own navy blue
-# (#3F5E96, same for light and dark system theme — a deliberate choice
-# to match the icon rather than switch backgrounds; see
-# docs/ARCHITECTURE.md). An earlier attempt used a hand-generated
-# "PULSE" text wordmark instead; dropped after it rendered with visible
-# ghosting/blur artifacts and just looked bad. Static, not animated: a
-# native splash runs before Flutter boots, so any real animation would
-# have to be a separate Flutter-side screen (see _StartupFadeIn in
-# app.dart) adding actual startup latency for a purely decorative
-# flourish beyond what that handoff transition already covers.
-#
-# Uses assets/splash/icon_padded.png (icon.png on a ~1.8x transparent
-# canvas), not icon.png directly: Android 12+'s splash-screen API
-# applies its own extra safe-zone scaling on top of whatever's given,
-# and a full-bleed launcher icon (text right at the edge) got its
-# bottom text clipped by that scaling. The generous padding here keeps
-# everything inside the safe area after Android's own scaling.
+# Native splash — a blank field, no icon, colored to exactly match
+# StartupLoadingScreen's background (scheme.surface: mist/#F1F4FA in
+# light, navyDeep/#141E30 in dark — see lib/core/theme/pulse_theme.dart)
+# so the handoff from native splash to that Flutter screen is invisible:
+# no color cut, no icon-then-different-screen moment, just the Playfair
+# "Pulse" wordmark fading in on what looks like one continuous screen.
+# Android always paints something immediately on cold start — this is
+# the closest a native splash (image+color only, no text, no animation)
+# can get to "no splash at all". An earlier version showed the app icon
+# here instead; dropped once StartupLoadingScreen gave the real branded
+# moment a proper (animated, textual) home of its own — see
+# lib/core/widgets/startup_loading_screen.dart and docs/ARCHITECTURE.md.
 # Regenerate with `dart run flutter_native_splash:create` after
 # changing anything below.
 flutter_native_splash:
-  color: "#3F5E96"
-  image: assets/splash/icon_padded.png
-  color_dark: "#3F5E96"
-  image_dark: assets/splash/icon_padded.png
+  color: "#F1F4FA"
+  color_dark: "#141E30"
   android_12:
-    color: "#3F5E96"
-    image: assets/splash/icon_padded.png
-    color_dark: "#3F5E96"
-    image_dark: assets/splash/icon_padded.png
+    color: "#F1F4FA"
+    color_dark: "#141E30"
+    # Android 12+'s SplashScreen API always shows *an* icon in a circle;
+    # leaving it unset falls back to the launcher icon (the exact "icon
+    # screen" moment we're trying to remove). A fully transparent image
+    # plus a background matching the field color is the closest thing
+    # to "no icon at all" the API allows.
+    image: assets/splash/blank.png
+    image_dark: assets/splash/blank.png
+    icon_background_color: "#F1F4FA"
+    icon_background_color_dark: "#141E30"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

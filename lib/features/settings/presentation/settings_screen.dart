@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -14,6 +15,7 @@ import '../../backup/presentation/backup_providers.dart';
 import '../../checkin/presentation/checkin_providers.dart';
 import '../../checkin/presentation/checkin_scheduling.dart';
 import '../../today/presentation/today_providers.dart';
+import 'profile_providers.dart';
 
 /// Styled after the user's own settings mockup (rounded profile card,
 /// gray section labels, icon + label + trailing control/value row
@@ -80,17 +82,112 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-class _ProfileCard extends ConsumerStatefulWidget {
-  const _ProfileCard();
-
-  @override
-  ConsumerState<_ProfileCard> createState() => _ProfileCardState();
+String _initialsFor(String name) {
+  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+  return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+      .toUpperCase();
 }
 
-class _ProfileCardState extends ConsumerState<_ProfileCard> {
-  final _controller = TextEditingController();
-  bool _initialized = false;
-  bool _editing = false;
+class _ProfileCard extends ConsumerWidget {
+  const _ProfileCard();
+
+  Future<void> _openEditSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String name,
+  ) async {
+    final photo = await ref.read(profilePhotoProvider.future);
+    if (!context.mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => _ProfileEditSheet(name: name, photo: photo),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final name = ref.watch(userNameProvider).valueOrNull ?? '';
+    final photo = ref.watch(profilePhotoProvider).valueOrNull;
+    final scheme = Theme.of(context).colorScheme;
+
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => _openEditSheet(context, ref, name),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 12, 20),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: scheme.secondaryContainer,
+                backgroundImage: photo != null ? FileImage(photo) : null,
+                child: photo == null
+                    ? Text(
+                        _initialsFor(name.isEmpty ? '?' : name),
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              color: scheme.onSecondaryContainer,
+                            ),
+                      )
+                    : null,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                name.isEmpty ? 'Add your name' : name,
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'LOCAL',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: scheme.onSecondaryContainer,
+                        fontSize: 11,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileEditSheet extends ConsumerStatefulWidget {
+  const _ProfileEditSheet({required this.name, required this.photo});
+
+  final String name;
+  final File? photo;
+
+  @override
+  ConsumerState<_ProfileEditSheet> createState() => _ProfileEditSheetState();
+}
+
+class _ProfileEditSheetState extends ConsumerState<_ProfileEditSheet> {
+  late final _controller = TextEditingController(text: widget.name);
+  File? _pickedPhoto;
+  bool _removePhoto = false;
   bool _saving = false;
 
   @override
@@ -99,113 +196,136 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
     super.dispose();
   }
 
+  File? get _displayedPhoto => _removePhoto ? null : (_pickedPhoto ?? widget.photo);
+
+  Future<void> _pickPhoto() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _pickedPhoto = File(picked.path);
+      _removePhoto = false;
+    });
+  }
+
   Future<void> _save() async {
     final name = _controller.text.trim();
     if (name.isEmpty) return;
 
     setState(() => _saving = true);
     await ref.read(preferencesRepositoryProvider).setName(name);
-    ref.invalidate(userNameProvider);
-    if (mounted) {
-      setState(() {
-        _saving = false;
-        _editing = false;
-      });
+    if (_pickedPhoto != null) {
+      await ref.read(profilePhotoRepositoryProvider).setPhoto(_pickedPhoto!);
+    } else if (_removePhoto) {
+      await ref.read(profilePhotoRepositoryProvider).clearPhoto();
     }
-  }
-
-  String _initialsFor(String name) {
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-        .toUpperCase();
+    ref.invalidate(userNameProvider);
+    ref.invalidate(profilePhotoProvider);
+    if (mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final nameAsync = ref.watch(userNameProvider);
-    final name = nameAsync.valueOrNull ?? '';
+    final scheme = Theme.of(context).colorScheme;
+    final photo = _displayedPhoto;
 
-    if (!_initialized && nameAsync.hasValue) {
-      _controller.text = name;
-      _initialized = true;
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: _editing
-            ? Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      autofocus: true,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        border: OutlineInputBorder(),
-                      ),
-                      onSubmitted: (_) => _save(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _saving ? null : _save,
-                    icon: _saving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.check),
-                  ),
-                ],
-              )
-            : Row(
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Edit profile', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 20),
+          Center(
+            child: GestureDetector(
+              onTap: _pickPhoto,
+              child: Stack(
                 children: [
                   CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                    child: Text(
-                      _initialsFor(name.isEmpty ? '?' : name),
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onSecondaryContainer,
-                          ),
-                    ),
+                    radius: 44,
+                    backgroundColor: scheme.secondaryContainer,
+                    backgroundImage: photo != null ? FileImage(photo) : null,
+                    child: photo == null
+                        ? Text(
+                            _initialsFor(widget.name.isEmpty ? '?' : widget.name),
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  color: scheme.onSecondaryContainer,
+                                ),
+                          )
+                        : null,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      name.isEmpty ? 'Add your name' : name,
-                      style: Theme.of(context).textTheme.titleLarge,
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: scheme.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: scheme.surfaceContainerHigh, width: 2),
+                      ),
+                      child: Icon(Icons.camera_alt, size: 16, color: scheme.onPrimary),
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'LOCAL',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onSecondaryContainer,
-                            fontSize: 11,
-                          ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    onPressed: () => setState(() => _editing = true),
                   ),
                 ],
               ),
+            ),
+          ),
+          if (photo != null)
+            Center(
+              child: TextButton(
+                onPressed: () => setState(() {
+                  _pickedPhoto = null;
+                  _removePhoto = true;
+                }),
+                child: const Text('Remove photo'),
+              ),
+            ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _controller,
+            autofocus: widget.name.isEmpty,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Name',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _saving ? null : () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _saving ? null : _save,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
