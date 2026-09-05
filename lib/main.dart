@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -58,9 +60,16 @@ void main() async {
   final storedThemeMode = await PreferencesRepository().getThemeMode();
 
   // No prompt — silently restores a previous Drive sign-in if one
-  // exists, so Settings shows the right account state immediately.
+  // exists. Deliberately not awaited: nothing in the first frame
+  // (onboarding/Today) touches Drive state, and this could take
+  // multiple seconds (up to its own internal 5s timeout) on a slow or
+  // flaky connection to Google Play Services — most visible on
+  // emulators — which was blocking runApp() and holding the native
+  // splash up long after the app was otherwise ready. driveAccountProvider
+  // watches GoogleDriveService.onAccountChanged, so Settings still
+  // updates reactively the moment this resolves in the background.
   final driveService = GoogleDriveService();
-  await driveService.initializeSilentSignIn();
+  unawaited(driveService.initializeSilentSignIn());
 
   final container = ProviderContainer(
     overrides: [
