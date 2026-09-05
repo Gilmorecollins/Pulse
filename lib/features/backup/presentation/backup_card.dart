@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
@@ -79,7 +80,7 @@ class _DriveAccountRowState extends ConsumerState<_DriveAccountRow> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
-          const Icon(Icons.cloud_outlined),
+          const Icon(SolarIconsOutline.cloud),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -146,7 +147,7 @@ class _BackupNowRowState extends ConsumerState<_BackupNowRow> {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      leading: const Icon(Icons.cloud_upload_outlined),
+      leading: const Icon(SolarIconsOutline.cloudUpload),
       title: const Text('Back up now'),
       subtitle: Text(
         lastSynced == null
@@ -159,7 +160,7 @@ class _BackupNowRowState extends ConsumerState<_BackupNowRow> {
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : const Icon(Icons.chevron_right),
+          : const Icon(SolarIconsOutline.altArrowRight),
       enabled: signedIn,
       onTap: (!signedIn || _busy) ? null : _backUp,
     );
@@ -294,7 +295,7 @@ class _AutomaticBackupRowState extends ConsumerState<_AutomaticBackupRow> {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      leading: const Icon(Icons.event_repeat_outlined),
+      leading: const Icon(SolarIconsOutline.repeat),
       title: const Text('Automatic backup'),
       subtitle: Text(
         schedule == null ? '—' : _subtitleFor(schedule, context),
@@ -305,7 +306,7 @@ class _AutomaticBackupRowState extends ConsumerState<_AutomaticBackupRow> {
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : const Icon(Icons.chevron_right),
+          : const Icon(SolarIconsOutline.altArrowRight),
       enabled: signedIn,
       onTap: (!signedIn || _busy || schedule == null) ? null : _openPicker,
     );
@@ -428,7 +429,7 @@ class _RestoreRowState extends ConsumerState<_RestoreRow> {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      leading: const Icon(Icons.cloud_download_outlined),
+      leading: const Icon(SolarIconsOutline.cloudDownload),
       title: const Text('Restore from Drive'),
       subtitle: const Text('Overwrites everything on this device'),
       trailing: _busy
@@ -437,7 +438,7 @@ class _RestoreRowState extends ConsumerState<_RestoreRow> {
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : const Icon(Icons.chevron_right),
+          : const Icon(SolarIconsOutline.altArrowRight),
       enabled: signedIn,
       onTap: (!signedIn || _busy) ? null : _restore,
     );

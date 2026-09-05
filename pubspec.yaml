@@ -99,6 +99,11 @@ dependencies:
   # rather than failing if offline on first launch.
   google_fonts: ^6.2.1
 
+  # App-wide icon set — replaces Material's default Icons with Solar
+  # Icons' Outline style throughout (Bold for the bottom nav's selected
+  # state only). Bundled as a font, no runtime fetch.
+  solar_icons: ^0.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

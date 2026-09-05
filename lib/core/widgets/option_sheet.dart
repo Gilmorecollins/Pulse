@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// One selectable choice in an [showOptionPicker] dialog.
 class OptionChoice<T> {
@@ -99,7 +100,7 @@ class _RadioRow<T> extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              selected ? SolarIconsOutline.checkCircle : SolarIconsOutline.radioMinimalistic,
               color: selected ? scheme.primary : scheme.outline,
             ),
             const SizedBox(width: 16),

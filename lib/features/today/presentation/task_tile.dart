@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -114,7 +115,7 @@ class TaskTile extends ConsumerWidget {
                     : null,
         trailing: task.recurrenceRuleId == null
             ? IconButton(
-                icon: const Icon(Icons.close, size: 18),
+                icon: const Icon(SolarIconsOutline.closeCircle, size: 18),
                 onPressed: () async {
                   await ref.read(todayRepositoryProvider).deleteTask(task.id);
                   await ref
@@ -123,7 +124,7 @@ class TaskTile extends ConsumerWidget {
                 },
               )
             : PopupMenuButton<_RecurringTaskAction>(
-                icon: const Icon(Icons.more_vert, size: 18),
+                icon: const Icon(SolarIconsOutline.menuDots, size: 18),
                 onSelected: (action) async {
                   switch (action) {
                     case _RecurringTaskAction.deleteOccurrence:
@@ -239,7 +240,7 @@ class _ExplainedTaskCardState extends ConsumerState<_ExplainedTaskCard> {
     return Card(
       child: ExpansionTile(
         leading: Icon(
-          Icons.info_outline,
+          SolarIconsOutline.infoCircle,
           color: Theme.of(context).colorScheme.tertiary,
         ),
         title: Text(task.title),

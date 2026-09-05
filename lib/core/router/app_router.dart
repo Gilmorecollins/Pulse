@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -111,28 +112,28 @@ class _PulseNavShell extends StatelessWidget {
         ),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today),
+            icon: Icon(SolarIconsOutline.calendarDate),
+            selectedIcon: Icon(SolarIconsBold.calendarDate),
             label: 'Today',
           ),
           NavigationDestination(
-            icon: Icon(Icons.view_week_outlined),
-            selectedIcon: Icon(Icons.view_week),
+            icon: Icon(SolarIconsOutline.calendarMinimalistic),
+            selectedIcon: Icon(SolarIconsBold.calendarMinimalistic),
             label: 'Week',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
+            icon: Icon(SolarIconsOutline.history),
+            selectedIcon: Icon(SolarIconsBold.history),
             label: 'History',
           ),
           NavigationDestination(
-            icon: Icon(Icons.insights_outlined),
-            selectedIcon: Icon(Icons.insights),
+            icon: Icon(SolarIconsOutline.chart),
+            selectedIcon: Icon(SolarIconsBold.chart),
             label: 'Insights',
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
+            icon: Icon(SolarIconsOutline.settings),
+            selectedIcon: Icon(SolarIconsBold.settings),
             label: 'Settings',
           ),
         ],

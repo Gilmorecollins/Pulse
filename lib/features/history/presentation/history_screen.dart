@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -40,7 +41,7 @@ class HistoryScreen extends ConsumerWidget {
           ),
           data: (reports) => reports.isEmpty
               ? const ComingSoon(
-                  icon: Icons.history,
+                  icon: SolarIconsOutline.history,
                   title: 'History',
                   message: 'Past days will show up here once you\'ve '
                       'completed a daily reflection.',

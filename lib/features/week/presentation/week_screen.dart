@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -115,7 +116,7 @@ class _DaySection extends StatelessWidget {
             Text(_label, style: Theme.of(context).textTheme.titleMedium),
             const Spacer(),
             IconButton(
-              icon: const Icon(Icons.add_circle_outline),
+              icon: const Icon(SolarIconsOutline.addCircle),
               tooltip: 'Add a task for $_label',
               onPressed: () => showModalBottomSheet(
                 context: context,

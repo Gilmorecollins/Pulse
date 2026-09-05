@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -77,7 +78,7 @@ class _ReflectionScreenState extends ConsumerState<ReflectionScreen> {
       appBar: AppBar(
         title: const Text('Daily Reflection'),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(SolarIconsOutline.closeCircle),
           onPressed: () => context.go('/today'),
         ),
       ),

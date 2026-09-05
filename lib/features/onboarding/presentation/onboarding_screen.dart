@@ -1,6 +1,7 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -215,7 +216,7 @@ class _WelcomeStep extends StatelessWidget {
               child: Row(
                 children: [
                   const Icon(
-                    Icons.monitor_heart_outlined,
+                    SolarIconsOutline.pulse,
                     color: Colors.white,
                     size: 20,
                   ),
@@ -326,7 +327,7 @@ class _NameStep extends StatelessWidget {
         children: [
           IconButton(
             onPressed: onBack,
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(SolarIconsOutline.arrowLeft),
             padding: EdgeInsets.zero,
             alignment: Alignment.centerLeft,
           ),
@@ -377,12 +378,12 @@ class _CheckInExplainerStep extends StatelessWidget {
         children: [
           IconButton(
             onPressed: onBack,
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(SolarIconsOutline.arrowLeft),
             padding: EdgeInsets.zero,
             alignment: Alignment.centerLeft,
           ),
           const SizedBox(height: 16),
-          Icon(Icons.bolt_outlined, size: 40, color: theme.colorScheme.primary),
+          Icon(SolarIconsOutline.bolt, size: 40, color: theme.colorScheme.primary),
           const SizedBox(height: 16),
           Text(
             'Pulse checks in per task',
@@ -438,7 +439,7 @@ class _TimeStep extends StatelessWidget {
         children: [
           IconButton(
             onPressed: onBack,
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(SolarIconsOutline.arrowLeft),
             padding: EdgeInsets.zero,
             alignment: Alignment.centerLeft,
           ),
@@ -466,7 +467,7 @@ class _TimeStep extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    const Icon(Icons.access_time),
+                    const Icon(SolarIconsOutline.clockCircle),
                     const SizedBox(width: 16),
                     Text(
                       time.format(context),

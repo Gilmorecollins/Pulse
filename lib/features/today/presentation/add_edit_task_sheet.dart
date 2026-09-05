@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -217,7 +218,7 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _busy ? null : _pickDay,
-                  icon: const Icon(Icons.calendar_today_outlined, size: 18),
+                  icon: const Icon(SolarIconsOutline.calendarDate, size: 18),
                   label: Text(
                     isToday
                         ? 'Today'
@@ -231,7 +232,7 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _busy ? null : _pickFinishTime,
-                  icon: const Icon(Icons.access_time, size: 18),
+                  icon: const Icon(SolarIconsOutline.clockCircle, size: 18),
                   label: Text(
                     _finishTime == null
                         ? 'Finish time'
@@ -262,7 +263,7 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
             Row(
               children: [
                 Icon(
-                  Icons.repeat,
+                  SolarIconsOutline.repeat,
                   size: 16,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),

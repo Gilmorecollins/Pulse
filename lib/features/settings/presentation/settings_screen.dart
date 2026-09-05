@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -124,7 +125,7 @@ class _ProfileCard extends ConsumerWidget {
               Align(
                 alignment: Alignment.topRight,
                 child: Icon(
-                  Icons.edit_outlined,
+                  SolarIconsOutline.pen,
                   size: 20,
                   color: scheme.onSurfaceVariant,
                 ),
@@ -274,7 +275,7 @@ class _ProfileEditSheetState extends ConsumerState<_ProfileEditSheet> {
                         shape: BoxShape.circle,
                         border: Border.all(color: scheme.surfaceContainerHigh, width: 2),
                       ),
-                      child: Icon(Icons.camera_alt, size: 16, color: scheme.onPrimary),
+                      child: Icon(SolarIconsOutline.camera, size: 16, color: scheme.onPrimary),
                     ),
                   ),
                 ],
@@ -385,10 +386,10 @@ class _ThemeRow extends ConsumerWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      leading: const Icon(Icons.dark_mode_outlined),
+      leading: const Icon(SolarIconsOutline.moon),
       title: const Text('Theme'),
       subtitle: Text(_subtitleFor(mode)),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: const Icon(SolarIconsOutline.altArrowRight),
       onTap: () => _openPicker(context, ref),
     );
   }
@@ -455,7 +456,7 @@ class _NotificationsRowState extends ConsumerState<_NotificationsRow> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
           child: Row(
             children: [
-              const Icon(Icons.notifications_outlined),
+              const Icon(SolarIconsOutline.bell),
               const SizedBox(width: 16),
               const Expanded(child: Text('Notifications')),
               Switch(
@@ -507,7 +508,7 @@ class _ReportTimeRowState extends ConsumerState<_ReportTimeRow> {
         final time = _time ?? snapshot.data;
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-          leading: const Icon(Icons.nightlight_round),
+          leading: const Icon(SolarIconsOutline.moonStars),
           title: const Text('Daily report time'),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -523,7 +524,7 @@ class _ReportTimeRowState extends ConsumerState<_ReportTimeRow> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.chevron_right),
+                  : const Icon(SolarIconsOutline.altArrowRight),
             ],
           ),
           onTap: _saving ? null : _pickAndSave,
@@ -569,7 +570,7 @@ class _StorageRow extends StatelessWidget {
       builder: (context, snapshot) {
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-          leading: const Icon(Icons.storage_outlined),
+          leading: const Icon(SolarIconsOutline.database),
           title: const Text('Storage'),
           trailing: Text(
             snapshot.data ?? '—',
@@ -592,7 +593,7 @@ class _AboutRow extends StatelessWidget {
         final version = snapshot.data?.version;
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-          leading: const Icon(Icons.info_outline),
+          leading: const Icon(SolarIconsOutline.infoCircle),
           title: const Text('About'),
           trailing: Text(version == null ? '—' : 'v$version'),
         );
@@ -624,7 +625,7 @@ class _PrivacyCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              Icons.shield_outlined,
+              SolarIconsOutline.shield,
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 16),

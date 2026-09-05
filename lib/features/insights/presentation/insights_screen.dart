@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -40,7 +41,7 @@ class InsightsScreen extends ConsumerWidget {
           ),
           data: (summary) => summary.daysTracked == 0
               ? const ComingSoon(
-                  icon: Icons.insights_outlined,
+                  icon: SolarIconsOutline.chart,
                   title: 'Insights',
                   message: 'Pulse Insights will appear once you\'ve '
                       'completed a few daily reports.',

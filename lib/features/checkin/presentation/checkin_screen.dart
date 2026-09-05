@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -25,7 +26,7 @@ class TaskCheckInScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Pulse'),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(SolarIconsOutline.closeCircle),
           onPressed: () => context.go('/today'),
         ),
       ),
@@ -199,19 +200,19 @@ class _TaskCheckInBodyState extends ConsumerState<_TaskCheckInBody> {
         if (!_explaining) ...[
           FilledButton.icon(
             onPressed: _busy ? null : _markDone,
-            icon: const Icon(Icons.check_circle_outline),
+            icon: const Icon(SolarIconsOutline.checkCircle),
             label: const Text('Mark as done'),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _busy ? null : _needMoreTime,
-            icon: const Icon(Icons.more_time),
+            icon: const Icon(SolarIconsOutline.alarmAdd),
             label: const Text('Need more time'),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _busy ? null : _carryForward,
-            icon: const Icon(Icons.arrow_forward),
+            icon: const Icon(SolarIconsOutline.arrowRight),
             label: const Text('Carry to tomorrow'),
           ),
           const SizedBox(height: 12),
@@ -219,7 +220,7 @@ class _TaskCheckInBodyState extends ConsumerState<_TaskCheckInBody> {
             onPressed: _busy
                 ? null
                 : () => setState(() => _explaining = true),
-            icon: const Icon(Icons.chat_bubble_outline),
+            icon: const Icon(SolarIconsOutline.chatRoundDots),
             label: const Text("Explain what's going on"),
           ),
         ] else ...[

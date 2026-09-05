@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -43,13 +44,13 @@ class TodayScreen extends ConsumerWidget {
             heroTag: 'logActivity',
             onPressed: () => _showLogActivitySheet(context),
             tooltip: 'Did something else come up?',
-            child: const Icon(Icons.bolt_outlined),
+            child: const Icon(SolarIconsOutline.bolt),
           ),
           const SizedBox(width: 12),
           FloatingActionButton.extended(
             heroTag: 'addTask',
             onPressed: () => _showAddTaskSheet(context),
-            icon: const Icon(Icons.add),
+            icon: const Icon(SolarIconsOutline.addCircle),
             label: const Text('Add Task'),
           ),
         ],
@@ -165,7 +166,7 @@ class _LogActivityCardState extends ConsumerState<_LogActivityCard> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.add),
+                  : const Icon(SolarIconsOutline.addCircle),
             ),
           ],
         ),
@@ -372,7 +373,7 @@ class _UpdateBannerState extends ConsumerState<_UpdateBanner> {
         child: Row(
           children: [
             Icon(
-              Icons.system_update_outlined,
+              SolarIconsOutline.download,
               color: scheme.onSecondaryContainer,
             ),
             const SizedBox(width: 12),
@@ -408,7 +409,7 @@ class _UpdateBannerState extends ConsumerState<_UpdateBanner> {
             if (!_downloading)
               IconButton(
                 icon: Icon(
-                  Icons.close,
+                  SolarIconsOutline.closeCircle,
                   size: 18,
                   color: scheme.onSecondaryContainer,
                 ),
@@ -498,7 +499,7 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.wb_sunny_outlined,
+              SolarIconsOutline.sun,
               size: 40,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -534,7 +535,7 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 40),
+            const Icon(SolarIconsOutline.dangerCircle, size: 40),
             const SizedBox(height: 16),
             const Text(
               "We couldn't load today's plan. Check your connection and try again.",

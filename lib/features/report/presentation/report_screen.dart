@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -22,7 +23,7 @@ class ReportScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Your Day'),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(SolarIconsOutline.closeCircle),
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -137,13 +138,13 @@ class _ReportBody extends StatelessWidget {
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: () => _sendToWhatsApp(context, data),
-          icon: const Icon(Icons.share_outlined, size: 18),
+          icon: const Icon(SolarIconsOutline.share, size: 18),
           label: const Text('Send to WhatsApp'),
         ),
         if (completed.isNotEmpty) ...[
           const SizedBox(height: 28),
           _SectionHeader(
-            icon: Icons.check_circle,
+            icon: SolarIconsOutline.checkCircle,
             label: 'Done',
             color: Colors.green,
           ),
@@ -174,13 +175,13 @@ class _ReportBody extends StatelessWidget {
         ],
         if (activities.isNotEmpty) ...[
           const SizedBox(height: 28),
-          _SectionHeader(icon: Icons.add_circle_outline, label: 'New activities'),
+          _SectionHeader(icon: SolarIconsOutline.addCircle, label: 'New activities'),
           const SizedBox(height: 12),
           ...activities.map((t) => _TaskLine(title: t.title)),
         ],
         if (data.reflection != null) ...[
           const SizedBox(height: 28),
-          _SectionHeader(icon: Icons.nightlight_round, label: 'Your reflection'),
+          _SectionHeader(icon: SolarIconsOutline.moonStars, label: 'Your reflection'),
           const SizedBox(height: 12),
           Card(
             child: Padding(
